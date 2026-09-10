@@ -493,40 +493,71 @@ input[type="number"]::-webkit-inner-spin-button {
   font-weight: 400;
 }
 
-.truck-counter {
+.truck-ratio {
   display: grid;
-  grid-template-columns: auto 42px minmax(58px, 1fr) 42px;
-  align-items: center;
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: end;
+  gap: 10px;
 }
 
-.truck-counter button,
-.truck-counter input {
-  height: 42px;
+.truck-ratio-side > span {
+  display: block;
+  margin-bottom: 6px;
+  color: #698197;
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.06em;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.truck-mini-counter {
+  display: grid;
+  grid-template-columns: 34px minmax(40px, 1fr) 34px;
+  gap: 5px;
+}
+
+.truck-mini-counter button,
+.truck-mini-counter input {
+  height: 40px;
   border: 1px solid rgba(148, 213, 255, 0.12);
-  border-radius: 11px;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.025);
 }
 
-.truck-counter button {
+.truck-mini-counter button {
   display: grid;
   place-items: center;
   color: #b4c7d7;
   transition: 160ms ease;
 }
 
-.truck-counter button:hover {
+.truck-mini-counter button:hover {
   color: #06121d;
   border-color: #7dd3fc;
   background: #7dd3fc;
 }
 
-.truck-counter input {
+.truck-mini-counter input {
   width: 100%;
   color: #f4f9ff;
   outline: none;
-  font-size: 19px;
+  font-size: 18px;
   font-weight: 750;
+  text-align: center;
+}
+
+.truck-ratio-separator {
+  padding-bottom: 10px;
+  color: #7dd3fc;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.truck-ratio-caption {
+  margin-top: 8px;
+  color: #587188;
+  font-size: 11px;
   text-align: center;
 }
 

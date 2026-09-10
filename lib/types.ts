@@ -16,7 +16,8 @@ export type Supply = {
   location: LocationCode;
   recipient: string;
   status: StoredDeliveryStatus;
-  truckCount: number;
+  trucksArrived: number;
+  trucksPlanned: number;
   escortStatus: EscortStatus;
   eventAt: Date;
   comment: string;
@@ -31,7 +32,8 @@ export type SupplyDraft = {
   location: LocationCode;
   recipient: string;
   status: DeliveryStatus;
-  truckCount: number;
+  trucksArrived: number;
+  trucksPlanned: number;
   escortStatus: EscortStatus;
   eventAt: Date;
   comment: string;

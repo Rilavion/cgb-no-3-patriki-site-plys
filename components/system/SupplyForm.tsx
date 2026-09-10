@@ -42,7 +42,9 @@ type SupplyFormState = {
   location: LocationCode;
   recipient: string;
   status: DeliveryStatus;
-  truckCount: number;
+  trucksArrived: number;
+  trucksPlanned: number;
+  truckCount?: number;
   escortStatus: EscortStatus;
   date: string;
   time: string;
@@ -60,7 +62,8 @@ function initialForm(supply?: Supply | null, template?: Supply | null): SupplyFo
     location: supply?.location ?? template?.location ?? "ZMH",
     recipient: supply?.recipient ?? template?.recipient ?? "",
     status: supply ? normalizedStatus(supply) : normalizedStatus(template),
-    truckCount: supply?.truckCount ?? template?.truckCount ?? 0,
+    trucksArrived: supply?.trucksArrived ?? template?.trucksArrived ?? 0,
+    trucksPlanned: supply?.trucksPlanned ?? template?.trucksPlanned ?? 0,
     escortStatus: supply?.escortStatus ?? template?.escortStatus ?? "UNKNOWN",
     date: input.date,
     time: input.time,
@@ -92,7 +95,8 @@ function isStoredDraft(value: unknown): value is SupplyFormState {
 function hasDraftContent(form: SupplyFormState) {
   return Boolean(
     form.recipient.trim() ||
-    form.truckCount > 0 ||
+    form.trucksArrived > 0 ||
+    form.trucksPlanned > 0 ||
     form.escortStatus === "YES" ||
     form.escortStatus === "NO" ||
     form.comment.trim() ||
@@ -131,12 +135,28 @@ export function SupplyForm({
       if (stored) {
         const parsed: unknown = JSON.parse(stored);
         if (isStoredDraft(parsed) && hasDraftContent(parsed)) {
+          const legacyTruckCount = Math.max(
+            0,
+            Math.min(MAX_TRUCK_COUNT, Math.round(Number(parsed.truckCount) || 0)),
+          );
+          const trucksPlanned = Math.max(
+            0,
+            Math.min(MAX_TRUCK_COUNT, Math.round(Number(parsed.trucksPlanned) || legacyTruckCount)),
+          );
           setForm({
             ...parsed,
-            truckCount: Math.max(
-              0,
-              Math.min(MAX_TRUCK_COUNT, Math.round(Number(parsed.truckCount) || 0)),
+            trucksArrived: Math.min(
+              trucksPlanned,
+              Math.max(
+                0,
+                Math.min(
+                  MAX_TRUCK_COUNT,
+                  Math.round(Number(parsed.trucksArrived) || legacyTruckCount),
+                ),
+              ),
             ),
+            trucksPlanned,
+            truckCount: undefined,
             escortStatus:
               parsed.escortStatus === "YES" || parsed.escortStatus === "NO"
                 ? parsed.escortStatus
@@ -193,12 +213,31 @@ export function SupplyForm({
     }));
   }
 
+  function setTrucksArrived(next: number) {
+    const arrived = Math.max(0, Math.min(MAX_TRUCK_COUNT, Math.round(next) || 0));
+    setForm((current) => ({
+      ...current,
+      trucksArrived: arrived,
+      trucksPlanned: Math.max(current.trucksPlanned, arrived),
+    }));
+  }
+
+  function setTrucksPlanned(next: number) {
+    const planned = Math.max(0, Math.min(MAX_TRUCK_COUNT, Math.round(next) || 0));
+    setForm((current) => ({
+      ...current,
+      trucksArrived: Math.min(current.trucksArrived, planned),
+      trucksPlanned: planned,
+    }));
+  }
+
   function reset() {
     setUndoForm(form);
     setForm((current) => ({
       ...current,
       organizations: Object.fromEntries(ORGANIZATIONS.map((org) => [org.id, 0])),
-      truckCount: 0,
+      trucksArrived: 0,
+      trucksPlanned: 0,
       escortStatus: "UNKNOWN",
       comment: "",
     }));
@@ -212,7 +251,8 @@ export function SupplyForm({
       location: lastSupply.location,
       recipient: lastSupply.recipient,
       status: normalizedStatus(lastSupply),
-      truckCount: lastSupply.truckCount,
+      trucksArrived: lastSupply.trucksArrived,
+      trucksPlanned: lastSupply.trucksPlanned,
       escortStatus: lastSupply.escortStatus,
       organizations: Object.fromEntries(
         ORGANIZATIONS.map((org) => [org.id, lastSupply.organizations[org.id] ?? 0]),
@@ -235,7 +275,8 @@ export function SupplyForm({
     location: form.location,
     recipient: form.recipient.trim(),
     status: form.status,
-    truckCount: form.truckCount,
+    trucksArrived: form.trucksArrived,
+    trucksPlanned: form.trucksPlanned,
     escortStatus: form.escortStatus,
     eventAt: fromMoscowInput(form.date, form.time),
     comment: form.comment.trim(),
@@ -394,57 +435,73 @@ export function SupplyForm({
 
           <div className="mt-4 grid gap-4 lg:grid-cols-[.8fr_1.2fr]">
             <fieldset className="operation-option-card">
-              <legend>Количество матавозок</legend>
-              <div className="truck-counter">
-                <Truck size={22} className="text-sky-300" />
-                <button
-                  type="button"
-                  aria-label="Уменьшить количество матавозок"
-                  onClick={() =>
-                    setForm((current) => ({
-                      ...current,
-                      truckCount: Math.max(0, current.truckCount - 1),
-                    }))
-                  }
-                >
-                  <Minus size={18} />
-                </button>
-                <input
-                  aria-label="Количество матавозок"
-                  type="number"
-                  inputMode="numeric"
-                  min="0"
-                  max={MAX_TRUCK_COUNT}
-                  value={form.truckCount}
-                  onFocus={(event) => event.currentTarget.select()}
-                  onChange={(event) =>
-                    setForm((current) => ({
-                      ...current,
-                      truckCount: Math.max(
-                        0,
-                        Math.min(
-                          MAX_TRUCK_COUNT,
-                          Number.isFinite(Number(event.target.value))
-                            ? Math.round(Number(event.target.value))
-                            : 0,
-                        ),
-                      ),
-                    }))
-                  }
-                />
-                <button
-                  type="button"
-                  aria-label="Увеличить количество матавозок"
-                  onClick={() =>
-                    setForm((current) => ({
-                      ...current,
-                      truckCount: Math.min(MAX_TRUCK_COUNT, current.truckCount + 1),
-                    }))
-                  }
-                >
-                  <Plus size={18} />
-                </button>
+              <legend className="inline-flex items-center gap-1.5">
+                <Truck size={14} /> Матавозки
+              </legend>
+              <div className="truck-ratio">
+                <div className="truck-ratio-side">
+                  <span>Прибыло</span>
+                  <div className="truck-mini-counter">
+                    <button
+                      type="button"
+                      aria-label="Уменьшить количество прибывших матавозок"
+                      onClick={() => setTrucksArrived(form.trucksArrived - 1)}
+                    >
+                      <Minus size={16} />
+                    </button>
+                    <input
+                      aria-label="Количество прибывших матавозок"
+                      type="number"
+                      inputMode="numeric"
+                      min="0"
+                      max={form.trucksPlanned || MAX_TRUCK_COUNT}
+                      value={form.trucksArrived}
+                      onFocus={(event) => event.currentTarget.select()}
+                      onChange={(event) => setTrucksArrived(Number(event.target.value))}
+                    />
+                    <button
+                      type="button"
+                      aria-label="Увеличить количество прибывших матавозок"
+                      onClick={() => setTrucksArrived(form.trucksArrived + 1)}
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
+                </div>
+
+                <span className="truck-ratio-separator">из</span>
+
+                <div className="truck-ratio-side">
+                  <span>Запланировано</span>
+                  <div className="truck-mini-counter">
+                    <button
+                      type="button"
+                      aria-label="Уменьшить запланированное количество матавозок"
+                      onClick={() => setTrucksPlanned(form.trucksPlanned - 1)}
+                    >
+                      <Minus size={16} />
+                    </button>
+                    <input
+                      aria-label="Запланированное количество матавозок"
+                      type="number"
+                      inputMode="numeric"
+                      min="0"
+                      max={MAX_TRUCK_COUNT}
+                      value={form.trucksPlanned}
+                      onFocus={(event) => event.currentTarget.select()}
+                      onChange={(event) => setTrucksPlanned(Number(event.target.value))}
+                    />
+                    <button
+                      type="button"
+                      aria-label="Увеличить запланированное количество матавозок"
+                      onClick={() => setTrucksPlanned(form.trucksPlanned + 1)}
+                    >
+                      <Plus size={16} />
+                    </button>
+                  </div>
+                </div>
               </div>
+              <p className="truck-ratio-caption">Прибыло из запланированных</p>
             </fieldset>
 
             <fieldset className="operation-option-card">
@@ -566,7 +623,8 @@ export function SupplyForm({
             <div>
               <p className="text-xs uppercase tracking-[.16em] text-slate-500">Всего сотрудников</p>
               <p className="mt-1 text-sm text-slate-300">
-                {active.length} организаций · {LOCATIONS[form.location]} · 🚚 {form.truckCount}
+                {active.length} организаций · {LOCATIONS[form.location]} · 🚚 {form.trucksArrived}{" "}
+                из {form.trucksPlanned}
               </p>
             </div>
           </div>
@@ -640,7 +698,9 @@ export function SupplyForm({
               </div>
               <div className="summary-chip">
                 <span>Матавозки</span>
-                <strong>🚚 {form.truckCount}</strong>
+                <strong>
+                  🚚 {form.trucksArrived} из {form.trucksPlanned}
+                </strong>
               </div>
               <div className="summary-chip">
                 <span>Сопровождение</span>

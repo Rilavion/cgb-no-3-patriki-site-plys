@@ -65,13 +65,22 @@ function requireDb() {
 function mapSupply(id: string, data: Record<string, unknown>): Supply {
   const asDate = (value: unknown) =>
     value instanceof Timestamp ? value.toDate() : value instanceof Date ? value : null;
+  const legacyTruckCount =
+    typeof data.truckCount === "number" ? Math.max(0, Math.round(data.truckCount)) : 0;
   return {
     id,
     location: data.location as Supply["location"],
     recipient: typeof data.recipient === "string" ? data.recipient : "",
     status:
       data.status === "DELIVERED" || data.status === "NOT_DELIVERED" ? data.status : "UNKNOWN",
-    truckCount: typeof data.truckCount === "number" ? Math.max(0, Math.round(data.truckCount)) : 0,
+    trucksArrived:
+      typeof data.trucksArrived === "number"
+        ? Math.max(0, Math.round(data.trucksArrived))
+        : legacyTruckCount,
+    trucksPlanned:
+      typeof data.trucksPlanned === "number"
+        ? Math.max(0, Math.round(data.trucksPlanned))
+        : legacyTruckCount,
     escortStatus:
       data.escortStatus === "YES" || data.escortStatus === "NO" ? data.escortStatus : "UNKNOWN",
     eventAt: asDate(data.eventAt) ?? new Date(),

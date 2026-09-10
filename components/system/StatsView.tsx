@@ -143,7 +143,7 @@ function createStatsCardBlob(analytics: Analytics, period: string) {
   const metrics = [
     ["Поставок", number.format(analytics.supplyCount)],
     ["Сотрудников", number.format(analytics.totalPeople)],
-    ["Матавозок", number.format(analytics.totalTrucks)],
+    ["Матавозки · прибыло / план", `${analytics.trucks.arrived} из ${analytics.trucks.planned}`],
     ["Успешно", `${analytics.delivery.successRate.toFixed(0)}%`],
   ];
   metrics.forEach(([label, value], index) => {
@@ -360,7 +360,11 @@ export function StatsView({
           <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
             <Metric value={analytics.supplyCount} label="поставок" />
             <Metric value={number.format(analytics.totalPeople)} label="сотрудников учтено" />
-            <Metric value={number.format(analytics.totalTrucks)} label="матавозок" accent="green" />
+            <Metric
+              value={`${number.format(analytics.trucks.arrived)} из ${number.format(analytics.trucks.planned)}`}
+              label={`матавозки · выполнение ${analytics.trucks.completionRate.toFixed(0)}%`}
+              accent="green"
+            />
             <Metric
               value={analytics.average.toFixed(1)}
               label="в среднем на поставку"

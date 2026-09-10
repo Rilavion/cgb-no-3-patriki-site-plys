@@ -59,7 +59,8 @@ export function getAnalytics(supplies: Supply[], organizationFilter: string = "A
   const delivered = supplies.filter((supply) => supply.status === "DELIVERED");
   const notDelivered = supplies.filter((supply) => supply.status === "NOT_DELIVERED");
   const unknownStatus = supplies.filter((supply) => supply.status === "UNKNOWN");
-  const totalTrucks = supplies.reduce((sum, supply) => sum + supply.truckCount, 0);
+  const trucksArrived = supplies.reduce((sum, supply) => sum + supply.trucksArrived, 0);
+  const trucksPlanned = supplies.reduce((sum, supply) => sum + supply.trucksPlanned, 0);
   const escortYes = supplies.filter((supply) => supply.escortStatus === "YES").length;
   const escortNo = supplies.filter((supply) => supply.escortStatus === "NO").length;
   const escortUnknown = supplies.filter((supply) => supply.escortStatus === "UNKNOWN").length;
@@ -91,8 +92,11 @@ export function getAnalytics(supplies: Supply[], organizationFilter: string = "A
     supplyCount: supplies.length,
     totalPeople,
     average: supplies.length ? totalPeople / supplies.length : 0,
-    totalTrucks,
-    averageTrucks: supplies.length ? totalTrucks / supplies.length : 0,
+    trucks: {
+      arrived: trucksArrived,
+      planned: trucksPlanned,
+      completionRate: trucksPlanned ? (trucksArrived / trucksPlanned) * 100 : 0,
+    },
     activeOrganizations: organizations.filter((org) => org.total > 0).length,
     organizations,
     byLocation,

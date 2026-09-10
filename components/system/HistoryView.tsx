@@ -122,7 +122,8 @@ export function HistoryView({
                     </p>
                     <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
                       <span className="inline-flex items-center gap-1.5">
-                        <Truck size={13} /> Матавозок: {supply.truckCount}
+                        <Truck size={13} /> Матавозки: {supply.trucksArrived} из{" "}
+                        {supply.trucksPlanned}
                       </span>
                       <span>{ESCORT_STATUSES[supply.escortStatus]}</span>
                     </p>
@@ -177,7 +178,9 @@ export function HistoryView({
               </div>
               <div className="summary-chip">
                 <span>Матавозки</span>
-                <strong>🚚 {selected.truckCount}</strong>
+                <strong>
+                  🚚 {selected.trucksArrived} из {selected.trucksPlanned}
+                </strong>
               </div>
               <div className="summary-chip">
                 <span>Сопровождение</span>
