@@ -23,12 +23,12 @@ import type { Supply, SupplyDraft } from './types';
 // Эти публичные значения копируются из Firebase Console → Project settings → Your apps.
 // Firebase Web API key не является секретом. Секреты и service-account JSON сюда помещать нельзя.
 export const firebaseConfig = {
-  apiKey: 'REPLACE_WITH_FIREBASE_API_KEY',
-  authDomain: 'REPLACE_WITH_PROJECT_ID.firebaseapp.com',
-  projectId: 'REPLACE_WITH_PROJECT_ID',
-  storageBucket: 'REPLACE_WITH_PROJECT_ID.firebasestorage.app',
-  messagingSenderId: 'REPLACE_WITH_MESSAGING_SENDER_ID',
-  appId: 'REPLACE_WITH_APP_ID',
+  apiKey: "AIzaSyCkzE2R5vAJe6R1OxLA_--5efk19EuIfM0",
+  authDomain: "supply-control-4bd40.firebaseapp.com",
+  projectId: "supply-control-4bd40",
+  storageBucket: "supply-control-4bd40.firebasestorage.app",
+  messagingSenderId: "68018699503",
+  appId: "1:68018699503:web:71dd3f07cad9a871bfef1a"
 };
 
 // Оставьте пустым до настройки App Check. После регистрации reCAPTCHA Enterprise вставьте site key.
