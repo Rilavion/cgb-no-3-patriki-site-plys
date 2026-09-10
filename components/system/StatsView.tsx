@@ -7,6 +7,7 @@ import {
   FileJson,
   PackageX,
   Sheet,
+  Truck,
   UsersRound,
 } from "lucide-react";
 import { useMemo, useState } from "react";
@@ -142,7 +143,7 @@ function createStatsCardBlob(analytics: Analytics, period: string) {
   const metrics = [
     ["Поставок", number.format(analytics.supplyCount)],
     ["Сотрудников", number.format(analytics.totalPeople)],
-    ["Среднее", analytics.average.toFixed(1)],
+    ["Матавозок", number.format(analytics.totalTrucks)],
     ["Успешно", `${analytics.delivery.successRate.toFixed(0)}%`],
   ];
   metrics.forEach(([label, value], index) => {
@@ -203,6 +204,13 @@ function createStatsCardBlob(analytics: Analytics, period: string) {
   context.fillStyle = "#7890a4";
   context.font = "400 17px Arial, sans-serif";
   context.fillText("не довезли", 1245, 525);
+  context.fillStyle = "#91a9bd";
+  context.font = "400 16px Arial, sans-serif";
+  context.fillText(
+    `Сопровождение: дали ${analytics.escort.yes} · не дали ${analytics.escort.no}`,
+    970,
+    551,
+  );
 
   context.fillStyle = "#f4f9ff";
   context.font = "600 24px Arial, sans-serif";
@@ -349,9 +357,10 @@ export function StatsView({
         </div>
       ) : (
         <>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
             <Metric value={analytics.supplyCount} label="поставок" />
             <Metric value={number.format(analytics.totalPeople)} label="сотрудников учтено" />
+            <Metric value={number.format(analytics.totalTrucks)} label="матавозок" accent="green" />
             <Metric
               value={analytics.average.toFixed(1)}
               label="в среднем на поставку"
@@ -518,6 +527,23 @@ export function StatsView({
                     Без статуса (старые записи): {analytics.delivery.unknown}
                   </p>
                 )}
+                <div className="mt-4 border-t border-white/8 pt-4">
+                  <p className="flex items-center gap-2 text-sm font-medium text-slate-300">
+                    <Truck size={16} className="text-sky-300" /> Сопровождение
+                  </p>
+                  <div className="mt-2 grid grid-cols-3 gap-2 text-center text-xs">
+                    <div className="rounded-xl bg-emerald-400/8 px-2 py-2 text-emerald-200">
+                      <strong className="block text-lg">{analytics.escort.yes}</strong> дали
+                    </div>
+                    <div className="rounded-xl bg-rose-400/8 px-2 py-2 text-rose-200">
+                      <strong className="block text-lg">{analytics.escort.no}</strong> не дали
+                    </div>
+                    <div className="rounded-xl bg-white/[.035] px-2 py-2 text-slate-400">
+                      <strong className="block text-lg">{analytics.escort.unknown}</strong> не
+                      указано
+                    </div>
+                  </div>
+                </div>
               </article>
               <article className="premium-panel p-5">
                 <h2 className="font-semibold text-white">ЗМХ / МС</h2>

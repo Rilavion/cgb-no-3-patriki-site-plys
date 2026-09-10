@@ -1,6 +1,7 @@
 export type LocationCode = "ZMH" | "MS";
 export type DeliveryStatus = "DELIVERED" | "NOT_DELIVERED";
 export type StoredDeliveryStatus = DeliveryStatus | "UNKNOWN";
+export type EscortStatus = "YES" | "NO" | "UNKNOWN";
 
 export type Organization = {
   id: string;
@@ -15,6 +16,8 @@ export type Supply = {
   location: LocationCode;
   recipient: string;
   status: StoredDeliveryStatus;
+  truckCount: number;
+  escortStatus: EscortStatus;
   eventAt: Date;
   comment: string;
   organizations: Record<string, number>;
@@ -28,6 +31,8 @@ export type SupplyDraft = {
   location: LocationCode;
   recipient: string;
   status: DeliveryStatus;
+  truckCount: number;
+  escortStatus: EscortStatus;
   eventAt: Date;
   comment: string;
   organizations: Record<string, number>;

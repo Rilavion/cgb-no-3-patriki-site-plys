@@ -59,6 +59,10 @@ export function getAnalytics(supplies: Supply[], organizationFilter: string = "A
   const delivered = supplies.filter((supply) => supply.status === "DELIVERED");
   const notDelivered = supplies.filter((supply) => supply.status === "NOT_DELIVERED");
   const unknownStatus = supplies.filter((supply) => supply.status === "UNKNOWN");
+  const totalTrucks = supplies.reduce((sum, supply) => sum + supply.truckCount, 0);
+  const escortYes = supplies.filter((supply) => supply.escortStatus === "YES").length;
+  const escortNo = supplies.filter((supply) => supply.escortStatus === "NO").length;
+  const escortUnknown = supplies.filter((supply) => supply.escortStatus === "UNKNOWN").length;
   const completedWithStatus = delivered.length + notDelivered.length;
   const recipientMap = new Map<
     string,
@@ -87,6 +91,8 @@ export function getAnalytics(supplies: Supply[], organizationFilter: string = "A
     supplyCount: supplies.length,
     totalPeople,
     average: supplies.length ? totalPeople / supplies.length : 0,
+    totalTrucks,
+    averageTrucks: supplies.length ? totalTrucks / supplies.length : 0,
     activeOrganizations: organizations.filter((org) => org.total > 0).length,
     organizations,
     byLocation,
@@ -95,6 +101,11 @@ export function getAnalytics(supplies: Supply[], organizationFilter: string = "A
       notDelivered: notDelivered.length,
       unknown: unknownStatus.length,
       successRate: completedWithStatus ? (delivered.length / completedWithStatus) * 100 : 0,
+    },
+    escort: {
+      yes: escortYes,
+      no: escortNo,
+      unknown: escortUnknown,
     },
     byRecipient,
   };

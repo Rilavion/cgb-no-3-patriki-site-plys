@@ -71,6 +71,9 @@ function mapSupply(id: string, data: Record<string, unknown>): Supply {
     recipient: typeof data.recipient === "string" ? data.recipient : "",
     status:
       data.status === "DELIVERED" || data.status === "NOT_DELIVERED" ? data.status : "UNKNOWN",
+    truckCount: typeof data.truckCount === "number" ? Math.max(0, Math.round(data.truckCount)) : 0,
+    escortStatus:
+      data.escortStatus === "YES" || data.escortStatus === "NO" ? data.escortStatus : "UNKNOWN",
     eventAt: asDate(data.eventAt) ?? new Date(),
     comment: typeof data.comment === "string" ? data.comment : "",
     organizations: (data.organizations ?? {}) as Record<string, number>,

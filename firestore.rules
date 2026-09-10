@@ -4,7 +4,7 @@ service cloud.firestore {
   match /databases/{database}/documents {
     function hasExactSupplyFields() {
       return request.resource.data.keys().hasOnly([
-        'location', 'recipient', 'status', 'eventAt', 'comment', 'organizations',
+        'location', 'recipient', 'status', 'truckCount', 'escortStatus', 'eventAt', 'comment', 'organizations',
         'total', 'revision', 'createdAt', 'updatedAt'
       ]) && request.resource.data.keys().hasAll([
         'location', 'recipient', 'status', 'eventAt', 'comment', 'organizations',
@@ -38,6 +38,8 @@ service cloud.firestore {
         && request.resource.data.recipient.size() > 0
         && request.resource.data.recipient.size() <= 120
         && request.resource.data.status in ['DELIVERED', 'NOT_DELIVERED']
+        && (!request.resource.data.keys().hasAny(['truckCount']) || (request.resource.data.truckCount is int && request.resource.data.truckCount >= 0 && request.resource.data.truckCount <= 99))
+        && (!request.resource.data.keys().hasAny(['escortStatus']) || request.resource.data.escortStatus in ['YES', 'NO', 'UNKNOWN'])
         && request.resource.data.eventAt is timestamp
         && request.resource.data.comment is string
         && request.resource.data.comment.size() <= 1000

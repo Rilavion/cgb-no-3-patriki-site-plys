@@ -4,14 +4,18 @@ import {
   Building2,
   CalendarDays,
   CheckCircle2,
+  CircleMinus,
   Clock3,
   Minus,
   PackageCheck,
   PackageX,
   Plus,
   RotateCcw,
+  ShieldCheck,
+  ShieldX,
   Sparkles,
   TimerReset,
+  Truck,
   Undo2,
   UserRound,
 } from "lucide-react";
@@ -20,14 +24,16 @@ import type { CSSProperties } from "react";
 import {
   ADDITIONAL_RECIPIENTS,
   DELIVERY_STATUSES,
+  ESCORT_STATUSES,
   getRecipientEmoji,
   LOCATIONS,
   MAX_COUNT_PER_ORGANIZATION,
+  MAX_TRUCK_COUNT,
   ORGANIZATIONS,
   RECIPIENT_OPTIONS,
 } from "@/lib/config";
 import { fromMoscowInput, toMoscowInput } from "@/lib/date";
-import type { DeliveryStatus, LocationCode, Supply, SupplyDraft } from "@/lib/types";
+import type { DeliveryStatus, EscortStatus, LocationCode, Supply, SupplyDraft } from "@/lib/types";
 import { Modal } from "./controls";
 
 const DRAFT_KEY = "supply-control-current-draft-v2";
@@ -36,6 +42,8 @@ type SupplyFormState = {
   location: LocationCode;
   recipient: string;
   status: DeliveryStatus;
+  truckCount: number;
+  escortStatus: EscortStatus;
   date: string;
   time: string;
   comment: string;
@@ -52,6 +60,8 @@ function initialForm(supply?: Supply | null, template?: Supply | null): SupplyFo
     location: supply?.location ?? template?.location ?? "ZMH",
     recipient: supply?.recipient ?? template?.recipient ?? "",
     status: supply ? normalizedStatus(supply) : normalizedStatus(template),
+    truckCount: supply?.truckCount ?? template?.truckCount ?? 0,
+    escortStatus: supply?.escortStatus ?? template?.escortStatus ?? "UNKNOWN",
     date: input.date,
     time: input.time,
     comment: supply?.comment ?? "",
@@ -82,6 +92,9 @@ function isStoredDraft(value: unknown): value is SupplyFormState {
 function hasDraftContent(form: SupplyFormState) {
   return Boolean(
     form.recipient.trim() ||
+    form.truckCount > 0 ||
+    form.escortStatus === "YES" ||
+    form.escortStatus === "NO" ||
     form.comment.trim() ||
     Object.values(form.organizations).some((value) => value > 0),
   );
@@ -120,6 +133,14 @@ export function SupplyForm({
         if (isStoredDraft(parsed) && hasDraftContent(parsed)) {
           setForm({
             ...parsed,
+            truckCount: Math.max(
+              0,
+              Math.min(MAX_TRUCK_COUNT, Math.round(Number(parsed.truckCount) || 0)),
+            ),
+            escortStatus:
+              parsed.escortStatus === "YES" || parsed.escortStatus === "NO"
+                ? parsed.escortStatus
+                : "UNKNOWN",
             organizations: Object.fromEntries(
               ORGANIZATIONS.map((org) => [
                 org.id,
@@ -177,6 +198,8 @@ export function SupplyForm({
     setForm((current) => ({
       ...current,
       organizations: Object.fromEntries(ORGANIZATIONS.map((org) => [org.id, 0])),
+      truckCount: 0,
+      escortStatus: "UNKNOWN",
       comment: "",
     }));
   }
@@ -189,6 +212,8 @@ export function SupplyForm({
       location: lastSupply.location,
       recipient: lastSupply.recipient,
       status: normalizedStatus(lastSupply),
+      truckCount: lastSupply.truckCount,
+      escortStatus: lastSupply.escortStatus,
       organizations: Object.fromEntries(
         ORGANIZATIONS.map((org) => [org.id, lastSupply.organizations[org.id] ?? 0]),
       ),
@@ -210,6 +235,8 @@ export function SupplyForm({
     location: form.location,
     recipient: form.recipient.trim(),
     status: form.status,
+    truckCount: form.truckCount,
+    escortStatus: form.escortStatus,
     eventAt: fromMoscowInput(form.date, form.time),
     comment: form.comment.trim(),
     organizations: form.organizations,
@@ -218,7 +245,7 @@ export function SupplyForm({
   return (
     <>
       <div className={supply || embedded ? "p-5 sm:p-6" : ""}>
-        <div className="mb-6 grid gap-4 lg:grid-cols-[1fr_auto] lg:items-end">
+        <div className="mb-6">
           {!supply && !embedded && (
             <div className="page-title-block">
               <div className="eyebrow">
@@ -235,21 +262,30 @@ export function SupplyForm({
               )}
             </div>
           )}
+        </div>
 
-          <div className={`location-switch ${supply ? "lg:col-start-1" : ""}`}>
+        <fieldset className="location-priority mb-4">
+          <legend>Место поставки *</legend>
+          <p className="location-priority-hint">Выберите направление перед заполнением поставки</p>
+          <div className="location-switch location-switch-primary">
             {(["ZMH", "MS"] as const).map((value) => (
               <button
                 key={value}
                 type="button"
+                data-location={value}
                 onClick={() => setForm((current) => ({ ...current, location: value }))}
                 className={form.location === value ? "is-active" : ""}
               >
-                <Building2 size={16} />
-                {LOCATIONS[value]}
+                <Building2 size={22} />
+                <span>
+                  <strong>{LOCATIONS[value]}</strong>
+                  <small>{value === "ZMH" ? "Зарайское хранилище" : "Медицинские склады"}</small>
+                </span>
+                {form.location === value && <CheckCircle2 size={20} className="location-check" />}
               </button>
             ))}
           </div>
-        </div>
+        </fieldset>
 
         <section className="premium-panel mb-4 p-4 sm:p-5">
           <div className="mb-4 flex items-center justify-between gap-3">
@@ -355,6 +391,89 @@ export function SupplyForm({
               </button>
             </div>
           </fieldset>
+
+          <div className="mt-4 grid gap-4 lg:grid-cols-[.8fr_1.2fr]">
+            <fieldset className="operation-option-card">
+              <legend>Количество матавозок</legend>
+              <div className="truck-counter">
+                <Truck size={22} className="text-sky-300" />
+                <button
+                  type="button"
+                  aria-label="Уменьшить количество матавозок"
+                  onClick={() =>
+                    setForm((current) => ({
+                      ...current,
+                      truckCount: Math.max(0, current.truckCount - 1),
+                    }))
+                  }
+                >
+                  <Minus size={18} />
+                </button>
+                <input
+                  aria-label="Количество матавозок"
+                  type="number"
+                  inputMode="numeric"
+                  min="0"
+                  max={MAX_TRUCK_COUNT}
+                  value={form.truckCount}
+                  onFocus={(event) => event.currentTarget.select()}
+                  onChange={(event) =>
+                    setForm((current) => ({
+                      ...current,
+                      truckCount: Math.max(
+                        0,
+                        Math.min(
+                          MAX_TRUCK_COUNT,
+                          Number.isFinite(Number(event.target.value))
+                            ? Math.round(Number(event.target.value))
+                            : 0,
+                        ),
+                      ),
+                    }))
+                  }
+                />
+                <button
+                  type="button"
+                  aria-label="Увеличить количество матавозок"
+                  onClick={() =>
+                    setForm((current) => ({
+                      ...current,
+                      truckCount: Math.min(MAX_TRUCK_COUNT, current.truckCount + 1),
+                    }))
+                  }
+                >
+                  <Plus size={18} />
+                </button>
+              </div>
+            </fieldset>
+
+            <fieldset className="operation-option-card">
+              <legend>
+                Дали ли сопровождение? <span>необязательно</span>
+              </legend>
+              <div className="escort-switch">
+                {(
+                  [
+                    ["YES", "Да", ShieldCheck],
+                    ["NO", "Нет", ShieldX],
+                    ["UNKNOWN", "Не указано", CircleMinus],
+                  ] as const
+                ).map(([value, label, Icon]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    className={
+                      form.escortStatus === value ? `is-active is-${value.toLowerCase()}` : ""
+                    }
+                    onClick={() => setForm((current) => ({ ...current, escortStatus: value }))}
+                  >
+                    <Icon size={18} /> {label}
+                  </button>
+                ))}
+              </div>
+              <p className="escort-caption">{ESCORT_STATUSES[form.escortStatus]}</p>
+            </fieldset>
+          </div>
         </section>
 
         <div className="mb-3 flex items-end justify-between gap-3 px-1">
@@ -447,7 +566,7 @@ export function SupplyForm({
             <div>
               <p className="text-xs uppercase tracking-[.16em] text-slate-500">Всего сотрудников</p>
               <p className="mt-1 text-sm text-slate-300">
-                {active.length} организаций · {LOCATIONS[form.location]}
+                {active.length} организаций · {LOCATIONS[form.location]} · 🚚 {form.truckCount}
               </p>
             </div>
           </div>
@@ -518,6 +637,14 @@ export function SupplyForm({
                 >
                   {DELIVERY_STATUSES[form.status]}
                 </strong>
+              </div>
+              <div className="summary-chip">
+                <span>Матавозки</span>
+                <strong>🚚 {form.truckCount}</strong>
+              </div>
+              <div className="summary-chip">
+                <span>Сопровождение</span>
+                <strong>{ESCORT_STATUSES[form.escortStatus]}</strong>
               </div>
             </div>
             <div className="grid gap-2 sm:grid-cols-2">

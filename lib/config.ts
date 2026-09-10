@@ -90,7 +90,13 @@ export const DELIVERY_STATUSES = {
   NOT_DELIVERED: "Не довезли",
   UNKNOWN: "Не указан",
 } as const;
+export const ESCORT_STATUSES = {
+  YES: "Сопровождение дали",
+  NO: "Сопровождение не дали",
+  UNKNOWN: "Не указано",
+} as const;
 export const MAX_COUNT_PER_ORGANIZATION = 999;
+export const MAX_TRUCK_COUNT = 99;
 export const MAX_RECIPIENT_LENGTH = 120;
 export const MOSCOW_TIME_ZONE = "Europe/Moscow";
 

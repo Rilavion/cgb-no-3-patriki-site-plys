@@ -8,12 +8,14 @@ import {
   PackageX,
   Pencil,
   Trash2,
+  Truck,
   UserRound,
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { filterSupplies } from "@/lib/analytics";
 import {
   DELIVERY_STATUSES,
+  ESCORT_STATUSES,
   getRecipientEmoji,
   LOCATIONS,
   ORGANIZATIONS,
@@ -118,6 +120,12 @@ export function HistoryView({
                         ? `${getRecipientEmoji(supply.recipient)} ${supply.recipient}`
                         : "Получатель не указан"}
                     </p>
+                    <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-slate-500">
+                      <span className="inline-flex items-center gap-1.5">
+                        <Truck size={13} /> Матавозок: {supply.truckCount}
+                      </span>
+                      <span>{ESCORT_STATUSES[supply.escortStatus]}</span>
+                    </p>
                     <p className="mt-1.5 truncate text-sm text-slate-400">
                       {active
                         .slice(0, 4)
@@ -166,6 +174,14 @@ export function HistoryView({
                   <StatusIcon status={selected.status} />
                   {DELIVERY_STATUSES[selected.status]}
                 </strong>
+              </div>
+              <div className="summary-chip">
+                <span>Матавозки</span>
+                <strong>🚚 {selected.truckCount}</strong>
+              </div>
+              <div className="summary-chip">
+                <span>Сопровождение</span>
+                <strong>{ESCORT_STATUSES[selected.escortStatus]}</strong>
               </div>
             </div>
             <div className="grid gap-2 sm:grid-cols-2">

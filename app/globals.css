@@ -333,6 +333,34 @@ input[type="number"]::-webkit-inner-spin-button {
   color: #486176;
 }
 
+.location-priority {
+  position: relative;
+  padding: 18px;
+  border: 1px solid rgba(103, 232, 249, 0.28);
+  border-radius: 22px;
+  background:
+    radial-gradient(circle at 50% 0, rgba(56, 189, 248, 0.15), transparent 58%),
+    linear-gradient(145deg, rgba(10, 31, 51, 0.97), rgba(5, 17, 30, 0.97));
+  box-shadow:
+    0 22px 58px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 0 0 4px rgba(56, 189, 248, 0.035);
+}
+
+.location-priority legend {
+  padding: 0 9px;
+  color: #dff8ff;
+  font-size: 15px;
+  font-weight: 750;
+  letter-spacing: 0.02em;
+}
+
+.location-priority-hint {
+  margin: -2px 0 13px;
+  color: #718ba1;
+  font-size: 12px;
+}
+
 .location-switch,
 .status-switch {
   display: grid;
@@ -376,6 +404,65 @@ input[type="number"]::-webkit-inner-spin-button {
     inset 0 1px 0 white;
 }
 
+.location-switch-primary {
+  gap: 9px;
+  padding: 7px;
+  border-color: rgba(125, 211, 252, 0.19);
+  border-radius: 18px;
+  background: rgba(1, 10, 19, 0.52);
+}
+
+.location-switch-primary button {
+  position: relative;
+  min-height: 74px;
+  justify-content: flex-start;
+  padding: 13px 17px;
+  border: 1px solid rgba(255, 255, 255, 0.055);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.018);
+  text-align: left;
+}
+
+.location-switch-primary button > span {
+  display: grid;
+  gap: 2px;
+}
+
+.location-switch-primary button strong {
+  font-size: 19px;
+  letter-spacing: 0.06em;
+}
+
+.location-switch-primary button small {
+  color: inherit;
+  font-size: 11px;
+  font-weight: 500;
+  opacity: 0.66;
+}
+
+.location-switch-primary button[data-location="ZMH"].is-active {
+  color: #03131e;
+  border-color: rgba(207, 250, 254, 0.72);
+  background: linear-gradient(135deg, #a5f3fc, #38bdf8);
+  box-shadow:
+    0 14px 34px rgba(14, 165, 233, 0.25),
+    inset 0 1px 0 white;
+}
+
+.location-switch-primary button[data-location="MS"].is-active {
+  color: #09071c;
+  border-color: rgba(224, 231, 255, 0.72);
+  background: linear-gradient(135deg, #c7d2fe, #818cf8);
+  box-shadow:
+    0 14px 34px rgba(99, 102, 241, 0.25),
+    inset 0 1px 0 white;
+}
+
+.location-check {
+  margin-left: auto;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.18));
+}
+
 .status-switch button.is-success {
   color: #d8fff0;
   background: linear-gradient(135deg, rgba(22, 163, 108, 0.3), rgba(25, 113, 86, 0.22));
@@ -386,6 +473,108 @@ input[type="number"]::-webkit-inner-spin-button {
   color: #ffe4e8;
   background: linear-gradient(135deg, rgba(225, 51, 84, 0.28), rgba(135, 35, 62, 0.2));
   box-shadow: inset 0 0 0 1px rgba(251, 113, 133, 0.2);
+}
+
+.operation-option-card {
+  padding: 14px;
+  border: 1px solid rgba(148, 213, 255, 0.09);
+  border-radius: 16px;
+  background: rgba(3, 14, 25, 0.38);
+}
+
+.operation-option-card legend {
+  padding: 0 5px;
+  color: #94a9bb;
+  font-size: 12px;
+}
+
+.operation-option-card legend span {
+  color: #526b80;
+  font-weight: 400;
+}
+
+.truck-counter {
+  display: grid;
+  grid-template-columns: auto 42px minmax(58px, 1fr) 42px;
+  align-items: center;
+  gap: 8px;
+}
+
+.truck-counter button,
+.truck-counter input {
+  height: 42px;
+  border: 1px solid rgba(148, 213, 255, 0.12);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.truck-counter button {
+  display: grid;
+  place-items: center;
+  color: #b4c7d7;
+  transition: 160ms ease;
+}
+
+.truck-counter button:hover {
+  color: #06121d;
+  border-color: #7dd3fc;
+  background: #7dd3fc;
+}
+
+.truck-counter input {
+  width: 100%;
+  color: #f4f9ff;
+  outline: none;
+  font-size: 19px;
+  font-weight: 750;
+  text-align: center;
+}
+
+.escort-switch {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+
+.escort-switch button {
+  display: flex;
+  min-height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px;
+  color: #71899e;
+  border: 1px solid rgba(148, 213, 255, 0.08);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.02);
+  font-size: 12px;
+  font-weight: 650;
+  transition: 170ms ease;
+}
+
+.escort-switch button.is-yes {
+  color: #d9ffef;
+  border-color: rgba(52, 211, 153, 0.3);
+  background: rgba(16, 185, 129, 0.16);
+}
+
+.escort-switch button.is-no {
+  color: #ffe4e9;
+  border-color: rgba(251, 113, 133, 0.3);
+  background: rgba(244, 63, 94, 0.14);
+}
+
+.escort-switch button.is-unknown {
+  color: #e1edf5;
+  border-color: rgba(148, 213, 255, 0.2);
+  background: rgba(148, 213, 255, 0.08);
+}
+
+.escort-caption {
+  margin-top: 8px;
+  color: #587188;
+  font-size: 11px;
+  text-align: right;
 }
 
 .counter-card {
@@ -1224,6 +1413,41 @@ input[type="number"]::-webkit-inner-spin-button {
   .status-switch button {
     min-width: 0;
     padding-inline: 10px;
+  }
+
+  .location-priority {
+    padding: 14px;
+  }
+
+  .location-switch-primary button {
+    min-height: 66px;
+    padding-inline: 12px;
+  }
+
+  .location-switch-primary button strong {
+    font-size: 17px;
+  }
+
+  .location-check {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+  }
+}
+
+@media (max-width: 430px) {
+  .location-switch-primary button small {
+    display: none;
+  }
+
+  .location-priority-hint {
+    line-height: 1.4;
+  }
+
+  .escort-switch button {
+    gap: 4px;
+    padding-inline: 5px;
+    font-size: 11px;
   }
 }
 
