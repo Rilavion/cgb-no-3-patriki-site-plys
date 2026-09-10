@@ -12,7 +12,13 @@ import {
 } from "lucide-react";
 import { useMemo, useState } from "react";
 import { filterSupplies } from "@/lib/analytics";
-import { DELIVERY_STATUSES, LOCATIONS, ORGANIZATIONS } from "@/lib/config";
+import {
+  DELIVERY_STATUSES,
+  getRecipientEmoji,
+  LOCATIONS,
+  ORGANIZATIONS,
+  RECIPIENT_OPTIONS,
+} from "@/lib/config";
 import { formatDateTime } from "@/lib/date";
 import type { FilterState, Supply } from "@/lib/types";
 import { EmptyState, LoadingState, Modal } from "./controls";
@@ -42,9 +48,12 @@ export function HistoryView({
   const visible = useMemo(() => filterSupplies(supplies, filters, true), [supplies, filters]);
   const recipients = useMemo(
     () =>
-      [...new Set(supplies.map((supply) => supply.recipient).filter(Boolean))].sort((a, b) =>
-        a.localeCompare(b, "ru"),
-      ),
+      [
+        ...new Set([
+          ...RECIPIENT_OPTIONS.map((recipient) => recipient.name),
+          ...supplies.map((supply) => supply.recipient).filter(Boolean),
+        ]),
+      ].sort((a, b) => a.localeCompare(b, "ru")),
     [supplies],
   );
 
@@ -105,12 +114,17 @@ export function HistoryView({
                     </div>
                     <p className="mt-2 flex items-center gap-1.5 text-sm text-sky-100/80">
                       <UserRound size={14} />
-                      {supply.recipient || "Получатель не указан"}
+                      {supply.recipient
+                        ? `${getRecipientEmoji(supply.recipient)} ${supply.recipient}`
+                        : "Получатель не указан"}
                     </p>
                     <p className="mt-1.5 truncate text-sm text-slate-400">
                       {active
                         .slice(0, 4)
-                        .map((org) => `${org.shortName} — ${supply.organizations[org.id]}`)
+                        .map(
+                          (org) =>
+                            `${org.emoji} ${org.shortName} — ${supply.organizations[org.id]}`,
+                        )
                         .join(" · ") || "Все значения равны нулю"}
                     </p>
                     {supply.comment && (
@@ -138,7 +152,11 @@ export function HistoryView({
             <div className="mb-4 grid gap-2 sm:grid-cols-2">
               <div className="summary-chip">
                 <span>Получатель</span>
-                <strong>{selected.recipient || "Не указан"}</strong>
+                <strong>
+                  {selected.recipient
+                    ? `${getRecipientEmoji(selected.recipient)} ${selected.recipient}`
+                    : "Не указан"}
+                </strong>
               </div>
               <div className="summary-chip">
                 <span>Статус</span>
@@ -154,9 +172,12 @@ export function HistoryView({
               {ORGANIZATIONS.map((org) => (
                 <div
                   key={org.id}
-                  className={`flex justify-between rounded-xl px-4 py-3 text-sm ${(selected.organizations[org.id] ?? 0) ? "bg-white/[.045]" : "bg-white/[.02] opacity-55"}`}
+                  style={{ borderLeftColor: org.color }}
+                  className={`flex justify-between rounded-xl border-l-2 px-4 py-3 text-sm ${(selected.organizations[org.id] ?? 0) ? "bg-white/[.045]" : "bg-white/[.02] opacity-55"}`}
                 >
-                  <span className="text-slate-300">{org.name}</span>
+                  <span className="text-slate-300">
+                    {org.emoji} {org.name}
+                  </span>
                   <strong className="tabular-nums text-white">
                     {selected.organizations[org.id] ?? 0}
                   </strong>

@@ -16,12 +16,15 @@ import {
   UserRound,
 } from "lucide-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import type { CSSProperties } from "react";
 import {
+  ADDITIONAL_RECIPIENTS,
   DELIVERY_STATUSES,
+  getRecipientEmoji,
   LOCATIONS,
   MAX_COUNT_PER_ORGANIZATION,
-  MAX_RECIPIENT_LENGTH,
   ORGANIZATIONS,
+  RECIPIENT_OPTIONS,
 } from "@/lib/config";
 import { fromMoscowInput, toMoscowInput } from "@/lib/date";
 import type { DeliveryStatus, LocationCode, Supply, SupplyDraft } from "@/lib/types";
@@ -79,8 +82,8 @@ function isStoredDraft(value: unknown): value is SupplyFormState {
 function hasDraftContent(form: SupplyFormState) {
   return Boolean(
     form.recipient.trim() ||
-      form.comment.trim() ||
-      Object.values(form.organizations).some((value) => value > 0),
+    form.comment.trim() ||
+    Object.values(form.organizations).some((value) => value > 0),
   );
 }
 
@@ -88,7 +91,6 @@ export function SupplyForm({
   supply,
   template,
   lastSupply,
-  recipients = [],
   saving,
   onSave,
   onCancel,
@@ -97,7 +99,6 @@ export function SupplyForm({
   supply?: Supply | null;
   template?: Supply | null;
   lastSupply?: Supply | null;
-  recipients?: string[];
   saving: boolean;
   onSave: (draft: SupplyDraft) => Promise<void>;
   onCancel?: () => void;
@@ -142,8 +143,7 @@ export function SupplyForm({
   useEffect(() => {
     if (!isPrimaryForm || !draftReady.current) return;
     const timer = window.setTimeout(() => {
-      if (hasDraftContent(form))
-        window.localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
+      if (hasDraftContent(form)) window.localStorage.setItem(DRAFT_KEY, JSON.stringify(form));
       else window.localStorage.removeItem(DRAFT_KEY);
     }, 350);
     return () => window.clearTimeout(timer);
@@ -154,6 +154,9 @@ export function SupplyForm({
     [form.organizations],
   );
   const active = ORGANIZATIONS.filter((org) => form.organizations[org.id] > 0);
+  const isLegacyRecipient = Boolean(
+    form.recipient && !RECIPIENT_OPTIONS.some((option) => option.name === form.recipient),
+  );
   const canSubmit = Boolean(form.date && form.time && form.recipient.trim() && !saving);
 
   function setCount(id: string, next: number) {
@@ -267,20 +270,34 @@ export function SupplyForm({
                   size={17}
                   className="pointer-events-none absolute left-3.5 top-3.5 text-slate-500"
                 />
-                <input
+                <select
                   required
-                  list="recipient-suggestions"
-                  maxLength={MAX_RECIPIENT_LENGTH}
                   value={form.recipient}
                   onChange={(event) => setForm({ ...form, recipient: event.target.value })}
-                  placeholder="Например: ГКБ № 1"
-                  className="premium-control h-11 w-full pl-10 pr-3 text-sm"
-                />
-                <datalist id="recipient-suggestions">
-                  {recipients.map((recipient) => (
-                    <option key={recipient} value={recipient} />
-                  ))}
-                </datalist>
+                  className="premium-control h-11 w-full appearance-none pl-10 pr-10 text-sm"
+                >
+                  <option value="">Выберите получателя</option>
+                  {isLegacyRecipient && (
+                    <option value={form.recipient}>Сохранённое значение: {form.recipient}</option>
+                  )}
+                  <optgroup label="Организации">
+                    {ORGANIZATIONS.map((recipient) => (
+                      <option key={recipient.id} value={recipient.name}>
+                        {recipient.emoji} {recipient.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                  <optgroup label="Другие получатели">
+                    {ADDITIONAL_RECIPIENTS.map((recipient) => (
+                      <option key={recipient.id} value={recipient.name}>
+                        {recipient.emoji} {recipient.name}
+                      </option>
+                    ))}
+                  </optgroup>
+                </select>
+                <span className="pointer-events-none absolute right-3.5 top-3 text-slate-500">
+                  ⌄
+                </span>
               </div>
             </label>
             <label className="grid gap-1.5 text-xs text-slate-400">
@@ -357,12 +374,22 @@ export function SupplyForm({
               <article
                 key={org.id}
                 className={`counter-card ${value ? "is-active" : ""}`}
-                style={{ animationDelay: `${index * 45}ms` }}
+                style={
+                  {
+                    animationDelay: `${index * 45}ms`,
+                    "--org-color": org.color,
+                  } as CSSProperties
+                }
               >
                 <div className="mb-4 flex items-start justify-between">
-                  <div>
-                    <p className="counter-index">{String(index + 1).padStart(2, "0")}</p>
-                    <h3 className="mt-1 min-h-10 font-medium text-slate-100">{org.name}</h3>
+                  <div className="flex items-start gap-3">
+                    <span className="org-emoji" aria-hidden="true">
+                      {org.emoji}
+                    </span>
+                    <div>
+                      <p className="counter-index">{String(index + 1).padStart(2, "0")}</p>
+                      <h3 className="mt-1 min-h-10 font-medium text-slate-100">{org.name}</h3>
+                    </div>
                   </div>
                   <span className="counter-indicator" />
                 </div>
@@ -480,7 +507,9 @@ export function SupplyForm({
             <div className="mb-4 grid gap-2 sm:grid-cols-2">
               <div className="summary-chip">
                 <span>Получатель</span>
-                <strong>{form.recipient.trim()}</strong>
+                <strong>
+                  {getRecipientEmoji(form.recipient)} {form.recipient.trim()}
+                </strong>
               </div>
               <div className="summary-chip">
                 <span>Статус</span>
@@ -495,7 +524,9 @@ export function SupplyForm({
               {active.length ? (
                 active.map((org) => (
                   <div key={org.id} className="summary-row">
-                    <span>{org.name}</span>
+                    <span>
+                      {org.emoji} {org.name}
+                    </span>
                     <strong>{form.organizations[org.id]}</strong>
                   </div>
                 ))

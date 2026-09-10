@@ -22,7 +22,7 @@ import {
   YAxis,
 } from "recharts";
 import { filterSupplies, getAnalytics } from "@/lib/analytics";
-import { LOCATIONS, PERIOD_OPTIONS } from "@/lib/config";
+import { getRecipientEmoji, LOCATIONS, PERIOD_OPTIONS, RECIPIENT_OPTIONS } from "@/lib/config";
 import { formatDate, formatTime } from "@/lib/date";
 import { downloadBlob, exportCsv, exportJson } from "@/lib/export";
 import type { FilterState, Supply } from "@/lib/types";
@@ -113,10 +113,10 @@ function createStatsCardBlob(analytics: Analytics, period: string) {
   }
 
   context.fillStyle = "#79e3ff";
-  context.font = "600 21px Arial, sans-serif";
+  context.font = '600 21px "Segoe UI Emoji", Arial, sans-serif';
   context.fillText("ОПЕРАТИВНЫЙ УЧЁТ · ЗМХ / МС", 72, 70);
   context.fillStyle = "#f4f9ff";
-  context.font = "700 54px Arial, sans-serif";
+  context.font = '700 54px "Segoe UI Emoji", Arial, sans-serif';
   context.fillText("Статистика поставок", 72, 132);
   context.fillStyle = "#91a9bd";
   context.font = "400 23px Arial, sans-serif";
@@ -168,8 +168,8 @@ function createStatsCardBlob(analytics: Analytics, period: string) {
   topOrganizations.forEach((organization, index) => {
     const y = 452 + index * 64;
     context.fillStyle = "#b9cad8";
-    context.font = "500 19px Arial, sans-serif";
-    context.fillText(`${index + 1}. ${organization.name}`, 72, y);
+    context.font = '500 19px "Segoe UI Emoji", Arial, sans-serif';
+    context.fillText(`${index + 1}. ${organization.emoji} ${organization.name}`, 72, y);
     context.textAlign = "right";
     context.fillStyle = "#f4f9ff";
     context.font = "700 20px Arial, sans-serif";
@@ -260,9 +260,12 @@ export function StatsView({
   const visible = useMemo(() => filterSupplies(supplies, filters), [supplies, filters]);
   const recipients = useMemo(
     () =>
-      [...new Set(supplies.map((supply) => supply.recipient).filter(Boolean))].sort((a, b) =>
-        a.localeCompare(b, "ru"),
-      ),
+      [
+        ...new Set([
+          ...RECIPIENT_OPTIONS.map((recipient) => recipient.name),
+          ...supplies.map((supply) => supply.recipient).filter(Boolean),
+        ]),
+      ].sort((a, b) => a.localeCompare(b, "ru")),
     [supplies],
   );
   const analytics = useMemo(
@@ -401,7 +404,12 @@ export function StatsView({
                       stroke="#70ddff"
                       strokeWidth={2.7}
                       fill="url(#activity)"
-                      activeDot={{ r: 5, fill: "#70ddff", stroke: "#07111e", strokeWidth: 3 }}
+                      activeDot={{
+                        r: 5,
+                        fill: "#70ddff",
+                        stroke: "#07111e",
+                        strokeWidth: 3,
+                      }}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
@@ -448,7 +456,9 @@ export function StatsView({
                         className="grid grid-cols-[8px_1fr_auto] items-center gap-2 text-xs"
                       >
                         <span className="size-2 rounded-full" style={{ background: org.color }} />
-                        <span className="truncate text-slate-400">{org.name}</span>
+                        <span className="truncate text-slate-400">
+                          {org.emoji} {org.name}
+                        </span>
                         <strong className="tabular-nums text-slate-200">
                           {org.share.toFixed(1)}%
                         </strong>
@@ -468,7 +478,7 @@ export function StatsView({
                     <div className="mb-1.5 flex justify-between gap-4 text-sm">
                       <span className="text-slate-300">
                         <span className="mr-2 text-slate-600">{index + 1}.</span>
-                        {org.name}
+                        {org.emoji} {org.name}
                       </span>
                       <strong className="tabular-nums text-white">
                         {number.format(org.total)}
@@ -541,7 +551,9 @@ export function StatsView({
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="text-xs text-slate-600">#{index + 1}</p>
-                      <p className="mt-1 font-medium text-slate-200">{item.recipient}</p>
+                      <p className="mt-1 font-medium text-slate-200">
+                        {getRecipientEmoji(item.recipient)} {item.recipient}
+                      </p>
                     </div>
                     <strong className="text-xl tabular-nums text-white">{item.supplies}</strong>
                   </div>
@@ -577,7 +589,9 @@ export function StatsView({
                       key={org.id}
                       className="border-t border-white/6 transition hover:bg-white/[.025]"
                     >
-                      <td className="px-5 py-4 font-medium text-slate-200">{org.name}</td>
+                      <td className="px-5 py-4 font-medium text-slate-200">
+                        {org.emoji} {org.name}
+                      </td>
                       <td className="px-5 py-4 tabular-nums text-white">
                         {number.format(org.total)}
                       </td>

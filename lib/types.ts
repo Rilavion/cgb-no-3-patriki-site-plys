@@ -6,6 +6,7 @@ export type Organization = {
   id: string;
   name: string;
   shortName: string;
+  emoji: string;
   color: string;
 };
 

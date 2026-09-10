@@ -62,13 +62,6 @@ export function SupplySystem() {
     return () => window.clearTimeout(id);
   }, [notice]);
   const lastSupply = useMemo(() => supplies[0] ?? null, [supplies]);
-  const recipients = useMemo(
-    () =>
-      [...new Set(supplies.map((supply) => supply.recipient).filter(Boolean))]
-        .sort((a, b) => a.localeCompare(b, "ru"))
-        .slice(0, 100),
-    [supplies],
-  );
 
   const showSaveSuccess = async () => {
     setSaveAnimation("success");
@@ -218,12 +211,7 @@ export function SupplySystem() {
         </div>
         <div key={page} className="page-enter">
           {page === "current" && (
-            <SupplyForm
-              lastSupply={lastSupply}
-              recipients={recipients}
-              saving={saving}
-              onSave={handleCreate}
-            />
+            <SupplyForm lastSupply={lastSupply} saving={saving} onSave={handleCreate} />
           )}
           {page === "history" && (
             <HistoryView
@@ -273,7 +261,6 @@ export function SupplySystem() {
         >
           <SupplyForm
             supply={editing}
-            recipients={recipients}
             saving={saving}
             onSave={handleUpdate}
             onCancel={() => setEditing(null)}
@@ -289,7 +276,6 @@ export function SupplySystem() {
           <SupplyForm
             embedded
             template={duplicate}
-            recipients={recipients}
             saving={saving}
             onSave={async (draft) => {
               await handleCreate(draft);
