@@ -1,0 +1,61 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function hasExactSupplyFields() {
+      return request.resource.data.keys().hasOnly([
+        'location', 'eventAt', 'comment', 'organizations',
+        'total', 'revision', 'createdAt', 'updatedAt'
+      ]) && request.resource.data.keys().hasAll([
+        'location', 'eventAt', 'comment', 'organizations',
+        'total', 'revision', 'createdAt', 'updatedAt'
+      ]);
+    }
+
+    function validOrganizations() {
+      let orgs = request.resource.data.organizations;
+      return orgs is map
+        && orgs.keys().hasOnly(['fso', 'uvd_cao', 'gibdd', 'vs_rf', 'codd', 'fsvng', 'fsin', 'moscow_life'])
+        && orgs.keys().hasAll(['fso', 'uvd_cao', 'gibdd', 'vs_rf', 'codd', 'fsvng', 'fsin', 'moscow_life'])
+        && orgs.fso is int && orgs.fso >= 0 && orgs.fso <= 999
+        && orgs.uvd_cao is int && orgs.uvd_cao >= 0 && orgs.uvd_cao <= 999
+        && orgs.gibdd is int && orgs.gibdd >= 0 && orgs.gibdd <= 999
+        && orgs.vs_rf is int && orgs.vs_rf >= 0 && orgs.vs_rf <= 999
+        && orgs.codd is int && orgs.codd >= 0 && orgs.codd <= 999
+        && orgs.fsvng is int && orgs.fsvng >= 0 && orgs.fsvng <= 999
+        && orgs.fsin is int && orgs.fsin >= 0 && orgs.fsin <= 999
+        && orgs.moscow_life is int && orgs.moscow_life >= 0 && orgs.moscow_life <= 999
+        && request.resource.data.total == orgs.fso + orgs.uvd_cao + orgs.gibdd + orgs.vs_rf + orgs.codd + orgs.fsvng + orgs.fsin + orgs.moscow_life;
+    }
+
+    function validSupply() {
+      return hasExactSupplyFields()
+        && request.resource.data.location in ['ZMH', 'MS']
+        && request.resource.data.eventAt is timestamp
+        && request.resource.data.comment is string
+        && request.resource.data.comment.size() <= 1000
+        && request.resource.data.total is int
+        && request.resource.data.total >= 0
+        && request.resource.data.total <= 7992
+        && request.resource.data.revision is int
+        && validOrganizations();
+    }
+
+    match /supplies/{supplyId} {
+      allow read: if true;
+      allow create: if validSupply()
+        && request.resource.data.revision == 1
+        && request.resource.data.createdAt == request.time
+        && request.resource.data.updatedAt == request.time;
+      allow update: if validSupply()
+        && request.resource.data.createdAt == resource.data.createdAt
+        && request.resource.data.updatedAt == request.time
+        && request.resource.data.revision == resource.data.revision + 1;
+      allow delete: if true;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
