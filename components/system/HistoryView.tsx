@@ -1,13 +1,22 @@
-'use client';
+"use client";
 
-import { ChevronRight, Copy, Pencil, Trash2 } from 'lucide-react';
-import { useMemo, useState } from 'react';
-import { filterSupplies } from '@/lib/analytics';
-import { LOCATIONS, ORGANIZATIONS } from '@/lib/config';
-import { formatDateTime } from '@/lib/date';
-import type { FilterState, Supply } from '@/lib/types';
-import { EmptyState, LoadingState, Modal } from './controls';
-import { DEFAULT_FILTERS, Filters } from './Filters';
+import {
+  CheckCircle2,
+  ChevronRight,
+  CircleHelp,
+  Copy,
+  PackageX,
+  Pencil,
+  Trash2,
+  UserRound,
+} from "lucide-react";
+import { useMemo, useState } from "react";
+import { filterSupplies } from "@/lib/analytics";
+import { DELIVERY_STATUSES, LOCATIONS, ORGANIZATIONS } from "@/lib/config";
+import { formatDateTime } from "@/lib/date";
+import type { FilterState, Supply } from "@/lib/types";
+import { EmptyState, LoadingState, Modal } from "./controls";
+import { DEFAULT_FILTERS, Filters } from "./Filters";
 
 export function HistoryView({
   supplies,
@@ -26,29 +35,38 @@ export function HistoryView({
 }) {
   const [filters, setFilters] = useState<FilterState>({
     ...DEFAULT_FILTERS,
-    period: 'all',
+    period: "all",
   });
   const [selected, setSelected] = useState<Supply | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<Supply | null>(null);
-  const visible = useMemo(
-    () => filterSupplies(supplies, filters, true),
-    [supplies, filters],
+  const visible = useMemo(() => filterSupplies(supplies, filters, true), [supplies, filters]);
+  const recipients = useMemo(
+    () =>
+      [...new Set(supplies.map((supply) => supply.recipient).filter(Boolean))].sort((a, b) =>
+        a.localeCompare(b, "ru"),
+      ),
+    [supplies],
   );
+
+  const StatusIcon = ({ status }: { status: Supply["status"] }) =>
+    status === "DELIVERED" ? (
+      <CheckCircle2 size={14} />
+    ) : status === "NOT_DELIVERED" ? (
+      <PackageX size={14} />
+    ) : (
+      <CircleHelp size={14} />
+    );
 
   return (
     <section>
       <div className="mb-6">
-        <p className="text-xs font-semibold uppercase tracking-[.2em] text-cyan-300">
-          Архив операций
-        </p>
-        <h1 className="mt-2 text-3xl font-semibold text-white">
-          История поставок
-        </h1>
+        <div className="eyebrow">Архив операций</div>
+        <h1 className="premium-title mt-2">История поставок</h1>
         <p className="mt-2 text-sm text-slate-400">
           {visible.length} записей по выбранным условиям
         </p>
       </div>
-      <Filters value={filters} onChange={setFilters} withSearch />
+      <Filters value={filters} onChange={setFilters} withSearch recipients={recipients} />
       <div className="mt-5">
         {loading ? (
           <LoadingState />
@@ -60,48 +78,43 @@ export function HistoryView({
         ) : (
           <div className="grid gap-3">
             {visible.map((supply) => {
-              const active = ORGANIZATIONS.filter(
-                (org) => (supply.organizations[org.id] ?? 0) > 0,
-              );
+              const active = ORGANIZATIONS.filter((org) => (supply.organizations[org.id] ?? 0) > 0);
               return (
                 <button
                   key={supply.id}
                   onClick={() => setSelected(supply)}
-                  className="group grid w-full gap-4 rounded-2xl border border-white/8 bg-[#0b1827] p-4 text-left transition hover:border-cyan-300/25 hover:bg-[#0e1d2e] sm:grid-cols-[150px_1fr_auto] sm:items-center sm:p-5"
+                  className="history-card group grid w-full gap-4 p-4 text-left sm:grid-cols-[170px_1fr_auto] sm:items-center sm:p-5"
                 >
                   <div>
-                    <span className="inline-flex rounded-lg border border-cyan-300/15 bg-cyan-300/8 px-2.5 py-1 text-xs font-semibold text-cyan-200">
-                      {LOCATIONS[supply.location]}
-                    </span>
-                    <p className="mt-2 text-sm text-slate-300">
-                      {formatDateTime(supply.eventAt)}
-                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <span className="location-badge">{LOCATIONS[supply.location]}</span>
+                      <span className={`status-badge status-${supply.status.toLowerCase()}`}>
+                        <StatusIcon status={supply.status} />
+                        {DELIVERY_STATUSES[supply.status]}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm text-slate-300">{formatDateTime(supply.eventAt)}</p>
                   </div>
                   <div className="min-w-0">
                     <div className="flex flex-wrap items-baseline gap-x-5 gap-y-1">
                       <p className="text-lg font-semibold text-white">
-                        {supply.total}{' '}
-                        <span className="text-sm font-normal text-slate-500">
-                          сотрудников
-                        </span>
+                        {supply.total}{" "}
+                        <span className="text-sm font-normal text-slate-500">сотрудников</span>
                       </p>
-                      <p className="text-sm text-slate-500">
-                        Организаций: {active.length}
-                      </p>
+                      <p className="text-sm text-slate-500">Организаций: {active.length}</p>
                     </div>
-                    <p className="mt-2 truncate text-sm text-slate-400">
+                    <p className="mt-2 flex items-center gap-1.5 text-sm text-sky-100/80">
+                      <UserRound size={14} />
+                      {supply.recipient || "Получатель не указан"}
+                    </p>
+                    <p className="mt-1.5 truncate text-sm text-slate-400">
                       {active
                         .slice(0, 4)
-                        .map(
-                          (org) =>
-                            `${org.shortName} — ${supply.organizations[org.id]}`,
-                        )
-                        .join(' · ') || 'Все значения равны нулю'}
+                        .map((org) => `${org.shortName} — ${supply.organizations[org.id]}`)
+                        .join(" · ") || "Все значения равны нулю"}
                     </p>
                     {supply.comment && (
-                      <p className="mt-1 truncate text-xs text-slate-500">
-                        {supply.comment}
-                      </p>
+                      <p className="mt-1 truncate text-xs text-slate-500">{supply.comment}</p>
                     )}
                   </div>
                   <ChevronRight
@@ -122,11 +135,26 @@ export function HistoryView({
           onClose={() => setSelected(null)}
         >
           <div className="p-5 sm:p-6">
+            <div className="mb-4 grid gap-2 sm:grid-cols-2">
+              <div className="summary-chip">
+                <span>Получатель</span>
+                <strong>{selected.recipient || "Не указан"}</strong>
+              </div>
+              <div className="summary-chip">
+                <span>Статус</span>
+                <strong
+                  className={`inline-flex items-center gap-1.5 status-text-${selected.status.toLowerCase()}`}
+                >
+                  <StatusIcon status={selected.status} />
+                  {DELIVERY_STATUSES[selected.status]}
+                </strong>
+              </div>
+            </div>
             <div className="grid gap-2 sm:grid-cols-2">
               {ORGANIZATIONS.map((org) => (
                 <div
                   key={org.id}
-                  className={`flex justify-between rounded-xl px-4 py-3 text-sm ${(selected.organizations[org.id] ?? 0) ? 'bg-white/[.045]' : 'bg-white/[.02] opacity-55'}`}
+                  className={`flex justify-between rounded-xl px-4 py-3 text-sm ${(selected.organizations[org.id] ?? 0) ? "bg-white/[.045]" : "bg-white/[.02] opacity-55"}`}
                 >
                   <span className="text-slate-300">{org.name}</span>
                   <strong className="tabular-nums text-white">
@@ -137,9 +165,7 @@ export function HistoryView({
             </div>
             {selected.comment && (
               <div className="mt-4 rounded-xl border border-white/8 p-4">
-                <p className="text-xs uppercase tracking-wider text-slate-500">
-                  Комментарий
-                </p>
+                <p className="text-xs uppercase tracking-wider text-slate-500">Комментарий</p>
                 <p className="mt-2 whitespace-pre-wrap text-sm text-slate-300">
                   {selected.comment}
                 </p>
@@ -148,9 +174,7 @@ export function HistoryView({
             <div className="mt-5 flex flex-col gap-3 border-t border-white/8 pt-5 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <span className="text-sm text-slate-400">Всего</span>
-                <strong className="ml-3 text-2xl tabular-nums text-white">
-                  {selected.total}
-                </strong>
+                <strong className="ml-3 text-2xl tabular-nums text-white">{selected.total}</strong>
               </div>
               <div className="flex flex-wrap gap-2">
                 <button
@@ -215,7 +239,7 @@ export function HistoryView({
               }}
               className="rounded-xl bg-rose-500 px-5 py-3 text-sm font-semibold text-white disabled:opacity-50"
             >
-              {deleting ? 'Удаляем…' : 'Удалить'}
+              {deleting ? "Удаляем…" : "Удалить"}
             </button>
           </div>
         </Modal>

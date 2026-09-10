@@ -1,4 +1,6 @@
-export type LocationCode = 'ZMH' | 'MS';
+export type LocationCode = "ZMH" | "MS";
+export type DeliveryStatus = "DELIVERED" | "NOT_DELIVERED";
+export type StoredDeliveryStatus = DeliveryStatus | "UNKNOWN";
 
 export type Organization = {
   id: string;
@@ -10,6 +12,8 @@ export type Organization = {
 export type Supply = {
   id: string;
   location: LocationCode;
+  recipient: string;
+  status: StoredDeliveryStatus;
   eventAt: Date;
   comment: string;
   organizations: Record<string, number>;
@@ -19,25 +23,31 @@ export type Supply = {
   revision: number;
 };
 
-export type SupplyDraft = Omit<
-  Supply,
-  'id' | 'createdAt' | 'updatedAt' | 'revision' | 'total'
->;
+export type SupplyDraft = {
+  location: LocationCode;
+  recipient: string;
+  status: DeliveryStatus;
+  eventAt: Date;
+  comment: string;
+  organizations: Record<string, number>;
+};
 
 export type PeriodKey =
-  | 'today'
-  | '7days'
-  | 'month'
-  | 'lastMonth'
-  | '3months'
-  | 'year'
-  | 'all'
-  | 'custom';
+  | "today"
+  | "7days"
+  | "month"
+  | "lastMonth"
+  | "3months"
+  | "year"
+  | "all"
+  | "custom";
 
 export type FilterState = {
   period: PeriodKey;
-  location: 'ALL' | LocationCode;
+  location: "ALL" | LocationCode;
   organization: string;
+  recipient: string;
+  status: "ALL" | StoredDeliveryStatus;
   from: string;
   to: string;
   search: string;

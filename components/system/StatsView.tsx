@@ -1,7 +1,15 @@
-'use client';
+"use client";
 
-import { Clipboard, Download, FileJson, Sheet } from 'lucide-react';
-import { useMemo, useRef, useState } from 'react';
+import {
+  CheckCircle2,
+  Clipboard,
+  Download,
+  FileJson,
+  PackageX,
+  Sheet,
+  UsersRound,
+} from "lucide-react";
+import { useMemo, useState } from "react";
 import {
   Area,
   AreaChart,
@@ -12,43 +20,232 @@ import {
   Tooltip,
   XAxis,
   YAxis,
-} from 'recharts';
-import { filterSupplies, getAnalytics } from '@/lib/analytics';
-import { LOCATIONS, PERIOD_OPTIONS } from '@/lib/config';
-import { formatDate, formatTime } from '@/lib/date';
-import { downloadBlob, exportCsv, exportJson } from '@/lib/export';
-import type { FilterState, Supply } from '@/lib/types';
-import { DEFAULT_FILTERS, Filters } from './Filters';
-import { EmptyState } from './controls';
+} from "recharts";
+import { filterSupplies, getAnalytics } from "@/lib/analytics";
+import { LOCATIONS, PERIOD_OPTIONS } from "@/lib/config";
+import { formatDate, formatTime } from "@/lib/date";
+import { downloadBlob, exportCsv, exportJson } from "@/lib/export";
+import type { FilterState, Supply } from "@/lib/types";
+import { EmptyState } from "./controls";
+import { DEFAULT_FILTERS, Filters } from "./Filters";
 
 const tooltipStyle = {
-  background: '#091626',
-  border: '1px solid rgba(255,255,255,.1)',
-  borderRadius: 12,
-  color: '#e8f0f7',
+  background: "#071423",
+  border: "1px solid rgba(125,211,252,.18)",
+  borderRadius: 14,
+  color: "#e8f4ff",
+  boxShadow: "0 18px 48px rgba(0,0,0,.35)",
 };
-const number = new Intl.NumberFormat('ru-RU');
+const number = new Intl.NumberFormat("ru-RU");
+type Analytics = ReturnType<typeof getAnalytics>;
 
 function Metric({
   value,
   label,
-  suffix,
+  accent = "blue",
 }: {
   value: string | number;
   label: string;
-  suffix?: string;
+  accent?: "blue" | "green" | "violet";
 }) {
   return (
-    <div className="rounded-2xl border border-white/8 bg-[#0b1827] p-5">
-      <p className="text-3xl font-semibold tabular-nums text-white">
-        {value}
-        {suffix && (
-          <span className="ml-1 text-base text-slate-500">{suffix}</span>
-        )}
-      </p>
-      <p className="mt-2 text-sm text-slate-500">{label}</p>
+    <div className={`metric-card metric-${accent}`}>
+      <span className="metric-glint" />
+      <p className="relative text-3xl font-semibold tabular-nums text-white">{value}</p>
+      <p className="relative mt-2 text-sm text-slate-400">{label}</p>
     </div>
   );
+}
+
+function roundRect(
+  context: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  width: number,
+  height: number,
+  radius: number,
+) {
+  context.beginPath();
+  context.roundRect(x, y, width, height, radius);
+}
+
+function fitText(context: CanvasRenderingContext2D, value: string, maxWidth: number) {
+  if (context.measureText(value).width <= maxWidth) return value;
+  let result = value;
+  while (result.length && context.measureText(`${result}…`).width > maxWidth)
+    result = result.slice(0, -1);
+  return `${result}…`;
+}
+
+function createStatsCardBlob(analytics: Analytics, period: string) {
+  const canvas = document.createElement("canvas");
+  canvas.width = 1600;
+  canvas.height = 900;
+  const context = canvas.getContext("2d");
+  if (!context) throw new Error("Браузер не поддерживает создание PNG.");
+
+  const background = context.createLinearGradient(0, 0, 1600, 900);
+  background.addColorStop(0, "#06101d");
+  background.addColorStop(0.55, "#0a1a2d");
+  background.addColorStop(1, "#071221");
+  context.fillStyle = background;
+  context.fillRect(0, 0, 1600, 900);
+
+  const glow = context.createRadialGradient(1370, 50, 10, 1370, 50, 560);
+  glow.addColorStop(0, "rgba(56,189,248,.22)");
+  glow.addColorStop(1, "rgba(56,189,248,0)");
+  context.fillStyle = glow;
+  context.fillRect(0, 0, 1600, 900);
+
+  context.strokeStyle = "rgba(148,213,255,.045)";
+  context.lineWidth = 1;
+  for (let x = 0; x <= 1600; x += 80) {
+    context.beginPath();
+    context.moveTo(x, 0);
+    context.lineTo(x, 900);
+    context.stroke();
+  }
+  for (let y = 0; y <= 900; y += 80) {
+    context.beginPath();
+    context.moveTo(0, y);
+    context.lineTo(1600, y);
+    context.stroke();
+  }
+
+  context.fillStyle = "#79e3ff";
+  context.font = "600 21px Arial, sans-serif";
+  context.fillText("ОПЕРАТИВНЫЙ УЧЁТ · ЗМХ / МС", 72, 70);
+  context.fillStyle = "#f4f9ff";
+  context.font = "700 54px Arial, sans-serif";
+  context.fillText("Статистика поставок", 72, 132);
+  context.fillStyle = "#91a9bd";
+  context.font = "400 23px Arial, sans-serif";
+  context.fillText(period, 74, 172);
+
+  context.textAlign = "right";
+  context.fillStyle = "#6e879c";
+  context.font = "400 17px Arial, sans-serif";
+  context.fillText("Сформировано по московскому времени", 1528, 78);
+  context.fillStyle = "#ddecf7";
+  context.font = "600 21px Arial, sans-serif";
+  context.fillText(
+    new Intl.DateTimeFormat("ru-RU", {
+      timeZone: "Europe/Moscow",
+      dateStyle: "long",
+      timeStyle: "short",
+    }).format(new Date()),
+    1528,
+    112,
+  );
+  context.textAlign = "left";
+
+  const metrics = [
+    ["Поставок", number.format(analytics.supplyCount)],
+    ["Сотрудников", number.format(analytics.totalPeople)],
+    ["Среднее", analytics.average.toFixed(1)],
+    ["Успешно", `${analytics.delivery.successRate.toFixed(0)}%`],
+  ];
+  metrics.forEach(([label, value], index) => {
+    const x = 72 + index * 370;
+    roundRect(context, x, 215, 340, 132, 22);
+    context.fillStyle = "rgba(13,35,57,.9)";
+    context.fill();
+    context.strokeStyle = "rgba(125,211,252,.13)";
+    context.stroke();
+    context.fillStyle = index === 3 ? "#6ee7b7" : "#f4f9ff";
+    context.font = "700 40px Arial, sans-serif";
+    context.fillText(value, x + 26, 272);
+    context.fillStyle = "#7890a4";
+    context.font = "400 18px Arial, sans-serif";
+    context.fillText(label, x + 26, 312);
+  });
+
+  context.fillStyle = "#f4f9ff";
+  context.font = "600 25px Arial, sans-serif";
+  context.fillText("Топ организаций", 72, 405);
+  const topOrganizations = analytics.organizations.slice(0, 6);
+  const maxOrganization = topOrganizations[0]?.total || 1;
+  topOrganizations.forEach((organization, index) => {
+    const y = 452 + index * 64;
+    context.fillStyle = "#b9cad8";
+    context.font = "500 19px Arial, sans-serif";
+    context.fillText(`${index + 1}. ${organization.name}`, 72, y);
+    context.textAlign = "right";
+    context.fillStyle = "#f4f9ff";
+    context.font = "700 20px Arial, sans-serif";
+    context.fillText(number.format(organization.total), 875, y);
+    context.textAlign = "left";
+    roundRect(context, 72, y + 15, 803, 9, 5);
+    context.fillStyle = "rgba(255,255,255,.07)";
+    context.fill();
+    roundRect(context, 72, y + 15, Math.max(4, (organization.total / maxOrganization) * 803), 9, 5);
+    context.fillStyle = organization.color;
+    context.fill();
+  });
+
+  roundRect(context, 940, 388, 588, 180, 24);
+  context.fillStyle = "rgba(13,35,57,.82)";
+  context.fill();
+  context.strokeStyle = "rgba(125,211,252,.12)";
+  context.stroke();
+  context.fillStyle = "#f4f9ff";
+  context.font = "600 24px Arial, sans-serif";
+  context.fillText("Результат доставки", 970, 430);
+  context.fillStyle = "#6ee7b7";
+  context.font = "700 42px Arial, sans-serif";
+  context.fillText(number.format(analytics.delivery.delivered), 970, 492);
+  context.fillStyle = "#7890a4";
+  context.font = "400 17px Arial, sans-serif";
+  context.fillText("довезли", 970, 525);
+  context.fillStyle = "#fda4af";
+  context.font = "700 42px Arial, sans-serif";
+  context.fillText(number.format(analytics.delivery.notDelivered), 1245, 492);
+  context.fillStyle = "#7890a4";
+  context.font = "400 17px Arial, sans-serif";
+  context.fillText("не довезли", 1245, 525);
+
+  context.fillStyle = "#f4f9ff";
+  context.font = "600 24px Arial, sans-serif";
+  context.fillText("ЗМХ / МС", 940, 624);
+  analytics.byLocation.forEach((item, index) => {
+    const x = 940 + index * 302;
+    roundRect(context, x, 652, 286, 168, 22);
+    context.fillStyle = "rgba(13,35,57,.82)";
+    context.fill();
+    context.strokeStyle = "rgba(125,211,252,.12)";
+    context.stroke();
+    context.fillStyle = "#79e3ff";
+    context.font = "700 26px Arial, sans-serif";
+    context.fillText(LOCATIONS[item.location], x + 24, 694);
+    context.fillStyle = "#f4f9ff";
+    context.font = "700 36px Arial, sans-serif";
+    context.fillText(number.format(item.people), x + 24, 748);
+    context.fillStyle = "#7890a4";
+    context.font = "400 16px Arial, sans-serif";
+    context.fillText(`${item.supplies} поставок · ${item.share.toFixed(0)}%`, x + 24, 786);
+  });
+
+  const recipient = analytics.byRecipient[0];
+  context.fillStyle = "#6e879c";
+  context.font = "400 16px Arial, sans-serif";
+  context.fillText("Самый частый получатель", 72, 852);
+  context.fillStyle = "#ddecf7";
+  context.font = "600 20px Arial, sans-serif";
+  context.fillText(
+    recipient
+      ? `${fitText(context, recipient.recipient, 600)} · ${recipient.supplies} поставок`
+      : "Нет данных",
+    282,
+    852,
+  );
+
+  const dataUrl = canvas.toDataURL("image/png");
+  const [header, encoded] = dataUrl.split(",");
+  const mime = header.match(/data:(.*?);/)?.[1] ?? "image/png";
+  const binary = window.atob(encoded);
+  const bytes = new Uint8Array(binary.length);
+  for (let index = 0; index < binary.length; index += 1) bytes[index] = binary.charCodeAt(index);
+  return new Blob([bytes], { type: mime });
 }
 
 export function StatsView({
@@ -56,14 +253,17 @@ export function StatsView({
   onStatus,
 }: {
   supplies: Supply[];
-  onStatus: (message: string, tone?: 'success' | 'error') => void;
+  onStatus: (message: string, tone?: "success" | "error") => void;
 }) {
   const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
   const [creatingPng, setCreatingPng] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
-  const visible = useMemo(
-    () => filterSupplies(supplies, filters),
-    [supplies, filters],
+  const visible = useMemo(() => filterSupplies(supplies, filters), [supplies, filters]);
+  const recipients = useMemo(
+    () =>
+      [...new Set(supplies.map((supply) => supply.recipient).filter(Boolean))].sort((a, b) =>
+        a.localeCompare(b, "ru"),
+      ),
+    [supplies],
   );
   const analytics = useMemo(
     () => getAnalytics(visible, filters.organization),
@@ -71,59 +271,46 @@ export function StatsView({
   );
   const chartData = useMemo(
     () =>
-      [...visible]
-        .reverse()
-        .map((supply) => ({
-          date: formatDate(supply.eventAt),
-          time: formatTime(supply.eventAt),
-          value:
-            filters.organization === 'ALL'
-              ? supply.total
-              : (supply.organizations[filters.organization] ?? 0),
-          place: LOCATIONS[supply.location],
-        })),
+      [...visible].reverse().map((supply) => ({
+        date: formatDate(supply.eventAt),
+        time: formatTime(supply.eventAt),
+        value:
+          filters.organization === "ALL"
+            ? supply.total
+            : (supply.organizations[filters.organization] ?? 0),
+        place: LOCATIONS[supply.location],
+      })),
     [visible, filters.organization],
   );
   const periodLabel =
-    PERIOD_OPTIONS.find(([key]) => key === filters.period)?.[1] ?? 'Период';
+    filters.period === "custom" && (filters.from || filters.to)
+      ? `${filters.from || "начало"} — ${filters.to || "сегодня"}`
+      : (PERIOD_OPTIONS.find(([key]) => key === filters.period)?.[1] ?? "Период");
 
   async function makePng(copy: boolean) {
-    if (!cardRef.current) return;
     setCreatingPng(true);
+    let blob: Blob | null = null;
     try {
-      const { default: html2canvas } = await import('html2canvas');
-      const canvas = await html2canvas(cardRef.current, {
-        backgroundColor: '#07111e',
-        scale: 1.5,
-        logging: false,
-        useCORS: true,
-      });
-      const blob = await new Promise<Blob | null>((resolve) =>
-        canvas.toBlob(resolve, 'image/png', 1),
-      );
-      if (!blob) throw new Error('Не удалось сформировать изображение.');
-      if (copy && 'ClipboardItem' in window && navigator.clipboard?.write) {
-        await navigator.clipboard.write([
-          new ClipboardItem({ 'image/png': blob }),
-        ]);
-        onStatus('PNG-карточка скопирована в буфер обмена.', 'success');
+      blob = createStatsCardBlob(analytics, periodLabel);
+      if (copy && "ClipboardItem" in window && navigator.clipboard?.write) {
+        await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+        onStatus("PNG-карточка скопирована в буфер обмена.", "success");
       } else {
-        downloadBlob(
-          blob,
-          `supply-statistics-${new Date().toISOString().slice(0, 10)}.png`,
-        );
+        downloadBlob(blob, `supply-statistics-${new Date().toISOString().slice(0, 10)}.png`);
         onStatus(
           copy
-            ? 'Копирование изображений не поддерживается — PNG скачан.'
-            : 'PNG-карточка скачана.',
-          'success',
+            ? "Буфер изображений недоступен — PNG автоматически скачан."
+            : "PNG-карточка скачана.",
+          "success",
         );
       }
     } catch (error) {
-      onStatus(
-        error instanceof Error ? error.message : 'Не удалось создать PNG.',
-        'error',
-      );
+      if (copy && blob) {
+        downloadBlob(blob, `supply-statistics-${new Date().toISOString().slice(0, 10)}.png`);
+        onStatus("Браузер запретил копирование — PNG автоматически скачан.");
+      } else {
+        onStatus(error instanceof Error ? error.message : "Не удалось создать PNG.", "error");
+      }
     } finally {
       setCreatingPng(false);
     }
@@ -133,34 +320,22 @@ export function StatsView({
     <section>
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[.2em] text-cyan-300">
-            Аналитический контур
-          </p>
-          <h1 className="mt-2 text-3xl font-semibold text-white">
-            Статистика поставок
-          </h1>
+          <div className="eyebrow">Аналитический контур</div>
+          <h1 className="premium-title mt-2">Статистика поставок</h1>
           <p className="mt-2 text-sm text-slate-400">
-            Показатели пересчитываются автоматически по данным Firestore.
+            Живая картина по сотрудникам, маршрутам, получателям и результатам.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
-          <button
-            onClick={() => exportCsv(visible)}
-            className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-sm text-slate-300"
-          >
-            <Sheet size={16} />
-            CSV
+          <button onClick={() => exportCsv(visible)} className="ghost-action">
+            <Sheet size={16} /> CSV
           </button>
-          <button
-            onClick={() => exportJson(visible)}
-            className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2.5 text-sm text-slate-300"
-          >
-            <FileJson size={16} />
-            JSON
+          <button onClick={() => exportJson(visible)} className="ghost-action">
+            <FileJson size={16} /> JSON
           </button>
         </div>
       </div>
-      <Filters value={filters} onChange={setFilters} />
+      <Filters value={filters} onChange={setFilters} recipients={recipients} />
 
       {!visible.length ? (
         <div className="mt-5">
@@ -171,99 +346,71 @@ export function StatsView({
         </div>
       ) : (
         <>
-          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
             <Metric value={analytics.supplyCount} label="поставок" />
-            <Metric
-              value={number.format(analytics.totalPeople)}
-              label="сотрудников учтено"
-            />
+            <Metric value={number.format(analytics.totalPeople)} label="сотрудников учтено" />
             <Metric
               value={analytics.average.toFixed(1)}
               label="в среднем на поставку"
+              accent="violet"
             />
+            <Metric value={analytics.activeOrganizations} label="активных организаций" />
             <Metric
-              value={analytics.activeOrganizations}
-              label="активных организаций"
+              value={`${analytics.delivery.successRate.toFixed(0)}%`}
+              label="успешных доставок"
+              accent="green"
             />
           </div>
 
           <div className="mt-5 grid gap-5 xl:grid-cols-[1.4fr_1fr]">
-            <article className="rounded-2xl border border-white/8 bg-[#0b1827] p-4 sm:p-5">
-              <div className="mb-5">
-                <h2 className="font-semibold text-white">
-                  Количество сотрудников по поставкам
-                </h2>
-                <p className="mt-1 text-xs text-slate-500">
-                  Хронология выбранного периода
-                </p>
-              </div>
-              <div className="h-72">
+            <article className="premium-panel p-4 sm:p-5">
+              <h2 className="font-semibold text-white">Количество сотрудников по поставкам</h2>
+              <p className="mt-1 text-xs text-slate-500">Хронология выбранного периода</p>
+              <div className="mt-4 h-72">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart data={chartData} margin={{ left: -18, right: 8 }}>
                     <defs>
                       <linearGradient id="activity" x1="0" y1="0" x2="0" y2="1">
-                        <stop
-                          offset="0%"
-                          stopColor="#67e8f9"
-                          stopOpacity={0.35}
-                        />
-                        <stop
-                          offset="100%"
-                          stopColor="#67e8f9"
-                          stopOpacity={0}
-                        />
+                        <stop offset="0%" stopColor="#70ddff" stopOpacity={0.4} />
+                        <stop offset="100%" stopColor="#70ddff" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid
-                      stroke="rgba(255,255,255,.06)"
-                      vertical={false}
-                    />
+                    <CartesianGrid stroke="rgba(255,255,255,.055)" vertical={false} />
                     <XAxis
                       dataKey="date"
-                      tick={{ fill: '#64748b', fontSize: 11 }}
+                      tick={{ fill: "#71869a", fontSize: 11 }}
                       axisLine={false}
                       tickLine={false}
                     />
                     <YAxis
                       allowDecimals={false}
-                      tick={{ fill: '#64748b', fontSize: 11 }}
+                      tick={{ fill: "#71869a", fontSize: 11 }}
                       axisLine={false}
                       tickLine={false}
                     />
                     <Tooltip
                       contentStyle={tooltipStyle}
-                      formatter={(value) => [
-                        `${String(value)} сотрудников`,
-                        'Учтено',
-                      ]}
+                      formatter={(value) => [`${String(value)} сотрудников`, "Учтено"]}
                       labelFormatter={(label, payload) =>
-                        `${String(label)} · ${String(payload?.[0]?.payload?.time ?? '')} · ${String(payload?.[0]?.payload?.place ?? '')}`
+                        `${String(label)} · ${String(payload?.[0]?.payload?.time ?? "")} · ${String(payload?.[0]?.payload?.place ?? "")}`
                       }
                     />
                     <Area
                       type="monotone"
                       dataKey="value"
-                      stroke="#67e8f9"
-                      strokeWidth={2.5}
+                      stroke="#70ddff"
+                      strokeWidth={2.7}
                       fill="url(#activity)"
-                      activeDot={{
-                        r: 5,
-                        fill: '#67e8f9',
-                        stroke: '#07111e',
-                        strokeWidth: 3,
-                      }}
+                      activeDot={{ r: 5, fill: "#70ddff", stroke: "#07111e", strokeWidth: 3 }}
                     />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
             </article>
-            <article className="rounded-2xl border border-white/8 bg-[#0b1827] p-4 sm:p-5">
-              <h2 className="font-semibold text-white">
-                Распределение по организациям
-              </h2>
-              <p className="mt-1 text-xs text-slate-500">
-                Доля от общего числа
-              </p>
+
+            <article className="premium-panel p-4 sm:p-5">
+              <h2 className="font-semibold text-white">Распределение по организациям</h2>
+              <p className="mt-1 text-xs text-slate-500">Доля от общего числа</p>
               <div className="grid items-center sm:grid-cols-[210px_1fr] xl:grid-cols-1 2xl:grid-cols-[210px_1fr]">
                 <div className="relative h-56">
                   <ResponsiveContainer width="100%" height="100%">
@@ -274,10 +421,11 @@ export function StatsView({
                           .map((org) => ({ ...org, fill: org.color }))}
                         dataKey="total"
                         nameKey="name"
-                        innerRadius={58}
-                        outerRadius={85}
-                        paddingAngle={2}
+                        innerRadius={60}
+                        outerRadius={88}
+                        paddingAngle={3}
                         stroke="none"
+                        animationDuration={900}
                       />
                       <Tooltip contentStyle={tooltipStyle} />
                     </PieChart>
@@ -287,9 +435,7 @@ export function StatsView({
                       <p className="text-2xl font-semibold text-white">
                         {number.format(analytics.totalPeople)}
                       </p>
-                      <p className="text-[10px] uppercase tracking-wider text-slate-500">
-                        всего
-                      </p>
+                      <p className="text-[10px] uppercase tracking-wider text-slate-500">всего</p>
                     </div>
                   </div>
                 </div>
@@ -301,13 +447,8 @@ export function StatsView({
                         key={org.id}
                         className="grid grid-cols-[8px_1fr_auto] items-center gap-2 text-xs"
                       >
-                        <span
-                          className="size-2 rounded-full"
-                          style={{ background: org.color }}
-                        />
-                        <span className="truncate text-slate-400">
-                          {org.name}
-                        </span>
+                        <span className="size-2 rounded-full" style={{ background: org.color }} />
+                        <span className="truncate text-slate-400">{org.name}</span>
                         <strong className="tabular-nums text-slate-200">
                           {org.share.toFixed(1)}%
                         </strong>
@@ -319,25 +460,23 @@ export function StatsView({
           </div>
 
           <div className="mt-5 grid gap-5 xl:grid-cols-2">
-            <article className="rounded-2xl border border-white/8 bg-[#0b1827] p-5">
+            <article className="premium-panel p-5">
               <h2 className="font-semibold text-white">Топ организаций</h2>
               <div className="mt-5 grid gap-4">
                 {analytics.organizations.map((org, index) => (
                   <div key={org.id}>
                     <div className="mb-1.5 flex justify-between gap-4 text-sm">
                       <span className="text-slate-300">
-                        <span className="mr-2 text-slate-600">
-                          {index + 1}.
-                        </span>
+                        <span className="mr-2 text-slate-600">{index + 1}.</span>
                         {org.name}
                       </span>
                       <strong className="tabular-nums text-white">
                         {number.format(org.total)}
                       </strong>
                     </div>
-                    <div className="h-2 overflow-hidden rounded-full bg-white/[.05]">
+                    <div className="progress-track">
                       <div
-                        className="h-full rounded-full"
+                        className="progress-value"
                         style={{
                           width: `${analytics.organizations[0]?.total ? (org.total / analytics.organizations[0].total) * 100 : 0}%`,
                           background: org.color,
@@ -348,89 +487,105 @@ export function StatsView({
                 ))}
               </div>
             </article>
-            <article className="rounded-2xl border border-white/8 bg-[#0b1827] p-5">
-              <h2 className="font-semibold text-white">ЗМХ / МС</h2>
-              <div className="mt-5 grid gap-3 sm:grid-cols-2">
-                {analytics.byLocation.map((item) => (
-                  <div
-                    key={item.location}
-                    className="rounded-xl border border-white/8 bg-white/[.025] p-4"
-                  >
-                    <div className="flex items-center justify-between">
-                      <strong className="text-lg text-white">
-                        {LOCATIONS[item.location]}
-                      </strong>
-                      <span className="text-sm font-semibold text-cyan-300">
-                        {item.share.toFixed(0)}%
-                      </span>
-                    </div>
-                    <p className="mt-5 text-2xl font-semibold text-white">
-                      {number.format(item.people)}
-                    </p>
-                    <p className="text-xs text-slate-500">сотрудников</p>
-                    <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
-                      <div>
-                        <p className="text-slate-500">Поставок</p>
-                        <p className="mt-1 text-slate-200">{item.supplies}</p>
-                      </div>
-                      <div>
-                        <p className="text-slate-500">Среднее</p>
-                        <p className="mt-1 text-slate-200">
-                          {item.average.toFixed(1)}
-                        </p>
-                      </div>
-                    </div>
+
+            <div className="grid gap-5">
+              <article className="premium-panel p-5">
+                <h2 className="font-semibold text-white">Результат доставки</h2>
+                <div className="mt-4 grid grid-cols-2 gap-3">
+                  <div className="result-card result-success">
+                    <CheckCircle2 size={20} />
+                    <strong>{analytics.delivery.delivered}</strong>
+                    <span>довезли</span>
                   </div>
-                ))}
-              </div>
-            </article>
+                  <div className="result-card result-danger">
+                    <PackageX size={20} />
+                    <strong>{analytics.delivery.notDelivered}</strong>
+                    <span>не довезли</span>
+                  </div>
+                </div>
+                {analytics.delivery.unknown > 0 && (
+                  <p className="mt-3 text-xs text-slate-500">
+                    Без статуса (старые записи): {analytics.delivery.unknown}
+                  </p>
+                )}
+              </article>
+              <article className="premium-panel p-5">
+                <h2 className="font-semibold text-white">ЗМХ / МС</h2>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {analytics.byLocation.map((item) => (
+                    <div key={item.location} className="location-stat">
+                      <div className="flex items-center justify-between">
+                        <strong>{LOCATIONS[item.location]}</strong>
+                        <span>{item.share.toFixed(0)}%</span>
+                      </div>
+                      <p>{number.format(item.people)}</p>
+                      <small>
+                        {item.supplies} поставок · среднее {item.average.toFixed(1)}
+                      </small>
+                    </div>
+                  ))}
+                </div>
+              </article>
+            </div>
           </div>
 
-          <article className="mt-5 overflow-hidden rounded-2xl border border-white/8 bg-[#0b1827]">
+          <article className="premium-panel mt-5 overflow-hidden">
             <div className="border-b border-white/8 p-5">
-              <h2 className="font-semibold text-white">
-                Статистика по организациям
+              <h2 className="flex items-center gap-2 font-semibold text-white">
+                <UsersRound size={18} className="text-sky-300" /> Получатели
               </h2>
+            </div>
+            <div className="grid gap-px bg-white/[.055] sm:grid-cols-2 xl:grid-cols-3">
+              {analytics.byRecipient.slice(0, 9).map((item, index) => (
+                <div key={item.recipient} className="bg-[#0a192a]/95 p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="text-xs text-slate-600">#{index + 1}</p>
+                      <p className="mt-1 font-medium text-slate-200">{item.recipient}</p>
+                    </div>
+                    <strong className="text-xl tabular-nums text-white">{item.supplies}</strong>
+                  </div>
+                  <p className="mt-3 text-xs text-slate-500">
+                    {number.format(item.people)} сотрудников · доставлено{" "}
+                    {item.successRate.toFixed(0)}%
+                  </p>
+                </div>
+              ))}
+            </div>
+          </article>
+
+          <article className="premium-panel mt-5 overflow-hidden">
+            <div className="border-b border-white/8 p-5">
+              <h2 className="font-semibold text-white">Статистика по организациям</h2>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full min-w-[760px] text-left text-sm">
                 <thead className="text-xs uppercase tracking-wider text-slate-600">
                   <tr>
-                    {[
-                      'Организация',
-                      'Всего',
-                      'Поставок',
-                      'Среднее',
-                      'Мин.',
-                      'Макс.',
-                      'Доля',
-                    ].map((name) => (
-                      <th key={name} className="px-5 py-3 font-medium">
-                        {name}
-                      </th>
-                    ))}
+                    {["Организация", "Всего", "Поставок", "Среднее", "Мин.", "Макс.", "Доля"].map(
+                      (name) => (
+                        <th key={name} className="px-5 py-3 font-medium">
+                          {name}
+                        </th>
+                      ),
+                    )}
                   </tr>
                 </thead>
                 <tbody>
                   {analytics.organizations.map((org) => (
-                    <tr key={org.id} className="border-t border-white/6">
-                      <td className="px-5 py-4 font-medium text-slate-200">
-                        {org.name}
-                      </td>
+                    <tr
+                      key={org.id}
+                      className="border-t border-white/6 transition hover:bg-white/[.025]"
+                    >
+                      <td className="px-5 py-4 font-medium text-slate-200">{org.name}</td>
                       <td className="px-5 py-4 tabular-nums text-white">
                         {number.format(org.total)}
                       </td>
-                      <td className="px-5 py-4 text-slate-400">
-                        {org.participations}
-                      </td>
-                      <td className="px-5 py-4 text-slate-400">
-                        {org.average.toFixed(1)}
-                      </td>
+                      <td className="px-5 py-4 text-slate-400">{org.participations}</td>
+                      <td className="px-5 py-4 text-slate-400">{org.average.toFixed(1)}</td>
                       <td className="px-5 py-4 text-slate-400">{org.min}</td>
                       <td className="px-5 py-4 text-slate-400">{org.max}</td>
-                      <td className="px-5 py-4 text-slate-400">
-                        {org.share.toFixed(1)}%
-                      </td>
+                      <td className="px-5 py-4 text-slate-400">{org.share.toFixed(1)}%</td>
                     </tr>
                   ))}
                 </tbody>
@@ -438,141 +593,33 @@ export function StatsView({
             </div>
           </article>
 
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-3">
-            <p className="text-sm text-slate-500">
-              Специальная карточка 1600 × 900 создаётся отдельно от страницы.
-            </p>
+          <div className="export-dock mt-5">
+            <div>
+              <p className="font-medium text-slate-200">Карточка для отправки</p>
+              <p className="mt-1 text-sm text-slate-500">
+                Отдельный PNG 1600 × 900 — не снимок страницы.
+              </p>
+            </div>
             <div className="flex flex-wrap gap-2">
               <button
                 disabled={creatingPng}
                 onClick={() => makePng(true)}
-                className="inline-flex items-center gap-2 rounded-xl border border-cyan-300/25 bg-cyan-300/8 px-4 py-3 text-sm font-semibold text-cyan-100 disabled:opacity-50"
+                className="ghost-action accent-action"
               >
                 <Clipboard size={16} />
-                {creatingPng ? 'Создаём PNG…' : 'Скопировать статистику'}
+                {creatingPng ? "Создаём PNG…" : "Скопировать статистику"}
               </button>
               <button
                 disabled={creatingPng}
                 onClick={() => makePng(false)}
-                className="inline-flex items-center gap-2 rounded-xl bg-cyan-300 px-4 py-3 text-sm font-bold text-[#07111e] disabled:opacity-50"
+                className="primary-action"
               >
-                <Download size={16} />
-                Скачать PNG
+                <Download size={16} /> Скачать PNG
               </button>
             </div>
-          </div>
-
-          <div
-            className="fixed -left-[10000px] top-0 w-[1600px]"
-            aria-hidden="true"
-          >
-            <ShareCard
-              ref={cardRef}
-              analytics={analytics}
-              period={periodLabel}
-            />
           </div>
         </>
       )}
     </section>
   );
 }
-
-import { forwardRef } from 'react';
-const ShareCard = forwardRef<
-  HTMLDivElement,
-  { analytics: ReturnType<typeof getAnalytics>; period: string }
->(({ analytics, period }, ref) => (
-  <div
-    ref={ref}
-    className="h-[900px] w-[1600px] overflow-hidden bg-[#07111e] p-20 text-white"
-    style={{
-      fontFamily: 'Inter, Arial, sans-serif',
-      backgroundImage:
-        'radial-gradient(circle at 85% 0%, rgba(34,211,238,.16), transparent 32%)',
-    }}
-  >
-    <div className="flex items-start justify-between border-b border-white/10 pb-10">
-      <div>
-        <p className="text-2xl font-semibold uppercase tracking-[.22em] text-cyan-300">
-          Учёт поставок
-        </p>
-        <h2 className="mt-5 text-6xl font-semibold">Оперативная статистика</h2>
-        <p className="mt-4 text-2xl text-slate-400">{period}</p>
-      </div>
-      <div className="rounded-3xl border border-cyan-300/20 bg-cyan-300/8 px-8 py-6 text-right">
-        <p className="text-lg text-slate-400">Сформировано</p>
-        <p className="mt-2 text-2xl font-semibold">
-          {new Intl.DateTimeFormat('ru-RU', {
-            timeZone: 'Europe/Moscow',
-            dateStyle: 'long',
-            timeStyle: 'short',
-          }).format(new Date())}
-        </p>
-      </div>
-    </div>
-    <div className="mt-10 grid grid-cols-3 gap-6">
-      <Metric value={analytics.supplyCount} label="поставок" />
-      <Metric
-        value={number.format(analytics.totalPeople)}
-        label="сотрудников учтено"
-      />
-      <Metric
-        value={analytics.average.toFixed(1)}
-        label="в среднем на поставку"
-      />
-    </div>
-    <div className="mt-10 grid grid-cols-[1.25fr_.75fr] gap-10">
-      <div>
-        <h3 className="text-2xl font-semibold">Топ организаций</h3>
-        <div className="mt-7 grid gap-5">
-          {analytics.organizations.slice(0, 6).map((org, index) => (
-            <div key={org.id}>
-              <div className="mb-2 flex justify-between text-xl">
-                <span>
-                  <span className="mr-4 text-slate-600">{index + 1}</span>
-                  {org.name}
-                </span>
-                <strong>{number.format(org.total)}</strong>
-              </div>
-              <div className="h-3 overflow-hidden rounded-full bg-white/[.06]">
-                <div
-                  className="h-full rounded-full"
-                  style={{
-                    width: `${analytics.organizations[0]?.total ? (org.total / analytics.organizations[0].total) * 100 : 0}%`,
-                    background: org.color,
-                  }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div>
-        <h3 className="text-2xl font-semibold">ЗМХ / МС</h3>
-        <div className="mt-7 grid gap-5">
-          {analytics.byLocation.map((item) => (
-            <div
-              key={item.location}
-              className="rounded-3xl border border-white/10 bg-white/[.035] p-7"
-            >
-              <div className="flex justify-between">
-                <strong className="text-3xl">{LOCATIONS[item.location]}</strong>
-                <span className="text-2xl text-cyan-300">
-                  {item.share.toFixed(0)}%
-                </span>
-              </div>
-              <p className="mt-6 text-5xl font-semibold">
-                {number.format(item.people)}
-              </p>
-              <p className="mt-2 text-lg text-slate-500">
-                сотрудников · {item.supplies} поставок
-              </p>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  </div>
-));
-ShareCard.displayName = 'ShareCard';
