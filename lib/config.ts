@@ -2,6 +2,7 @@ import type { Organization } from "./types";
 
 export const ORGANIZATIONS: Organization[] = [
   { id: "fso", name: "ФСО", shortName: "ФСО", emoji: "🛡️", color: "#67e8f9" },
+  { id: "fsb", name: "ФСБ", shortName: "ФСБ", emoji: "🕵️", color: "#22d3ee" },
   {
     id: "uvd_cao",
     name: "УВД по ЦАО",
@@ -56,7 +57,14 @@ export const ORGANIZATIONS: Organization[] = [
     name: "ЦГБ №7",
     shortName: "ЦГБ №7",
     emoji: "🏥",
-    color: "#fb923c",
+    color: "#ef4444",
+  },
+  {
+    id: "cgb3",
+    name: "ЦГБ №3",
+    shortName: "ЦГБ №3",
+    emoji: "🏥",
+    color: "#3b82f6",
   },
 ];
 

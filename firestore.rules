@@ -15,9 +15,10 @@ service cloud.firestore {
     function validOrganizations() {
       let orgs = request.resource.data.organizations;
       return orgs is map
-        && orgs.keys().hasOnly(['fso', 'uvd_cao', 'gibdd', 'vs_rf', 'codd', 'fsvng', 'fsin', 'moscow_life', 'cgb7'])
+        && orgs.keys().hasOnly(['fso', 'fsb', 'uvd_cao', 'gibdd', 'vs_rf', 'codd', 'fsvng', 'fsin', 'moscow_life', 'cgb7', 'cgb3'])
         && orgs.keys().hasAll(['fso', 'uvd_cao', 'gibdd', 'vs_rf', 'codd', 'fsvng', 'fsin', 'moscow_life'])
         && orgs.fso is int && orgs.fso >= 0 && orgs.fso <= 999
+        && (!orgs.keys().hasAny(['fsb']) || (orgs.fsb is int && orgs.fsb >= 0 && orgs.fsb <= 999))
         && orgs.uvd_cao is int && orgs.uvd_cao >= 0 && orgs.uvd_cao <= 999
         && orgs.gibdd is int && orgs.gibdd >= 0 && orgs.gibdd <= 999
         && orgs.vs_rf is int && orgs.vs_rf >= 0 && orgs.vs_rf <= 999
@@ -26,7 +27,8 @@ service cloud.firestore {
         && orgs.fsin is int && orgs.fsin >= 0 && orgs.fsin <= 999
         && orgs.moscow_life is int && orgs.moscow_life >= 0 && orgs.moscow_life <= 999
         && (!orgs.keys().hasAny(['cgb7']) || (orgs.cgb7 is int && orgs.cgb7 >= 0 && orgs.cgb7 <= 999))
-        && request.resource.data.total == orgs.fso + orgs.uvd_cao + orgs.gibdd + orgs.vs_rf + orgs.codd + orgs.fsvng + orgs.fsin + orgs.moscow_life + orgs.get('cgb7', 0);
+        && (!orgs.keys().hasAny(['cgb3']) || (orgs.cgb3 is int && orgs.cgb3 >= 0 && orgs.cgb3 <= 999))
+        && request.resource.data.total == orgs.fso + orgs.get('fsb', 0) + orgs.uvd_cao + orgs.gibdd + orgs.vs_rf + orgs.codd + orgs.fsvng + orgs.fsin + orgs.moscow_life + orgs.get('cgb7', 0) + orgs.get('cgb3', 0);
     }
 
     function validSupply() {
@@ -41,7 +43,7 @@ service cloud.firestore {
         && request.resource.data.comment.size() <= 1000
         && request.resource.data.total is int
         && request.resource.data.total >= 0
-        && request.resource.data.total <= 8991
+        && request.resource.data.total <= 10989
         && request.resource.data.revision is int
         && validOrganizations();
     }
